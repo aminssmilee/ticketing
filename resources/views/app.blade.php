@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     {{-- <title inertia>{{ config('Appcare') }}</title> --}}
-    <title>appcare</title>
+    <title>PSN</title>
     {{-- favicon --}}
-    <link rel="icon" href="{{ asset('img/image.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/psn.jpg') }}" type="image/png">
     {{-- atau bisa juga pakai .ico jika kamu punya file favicon.ico --}}
     {{-- <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon"> --}}
 

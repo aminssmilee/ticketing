@@ -13,7 +13,7 @@ class LoginController extends Controller
     public function index()
     {
         if (Auth::check()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('ticket.dashboard');
         }
 
         // 👇 Pastikan path di sini sama dengan folder kamu di `resources/js/pages`
@@ -39,7 +39,7 @@ class LoginController extends Controller
                 return back()->withErrors(['email' => 'Akses ditolak. Bukan admin.']);
             }
 
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('ticket.dashboard');
         }
 
         return back()->withErrors(['email' => 'Email atau password salah.']);
@@ -51,6 +51,6 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('admin.login');
+        return redirect()->route('ticket.login');
     }
 }
