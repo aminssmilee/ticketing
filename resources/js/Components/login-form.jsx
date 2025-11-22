@@ -141,6 +141,16 @@ export function LoginForm({ className, ...props }) {
           )}
         </div>
 
+        {/* Forgot Password Link */}
+        <div className="text-right -mt-2">
+          <a
+            href="/forgot-password"
+            className="text-xs sm:text-sm text-primary underline hover:text-primary/80"
+          >
+            Forgot your password?
+          </a>
+        </div>
+
         {/* Login button */}
         <Button
           type="submit"

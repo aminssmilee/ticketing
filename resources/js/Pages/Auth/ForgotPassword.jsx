@@ -1,50 +1,107 @@
-import GuestLayout from '@/Layouts/GuestLayout';
-import InputError from '@/Components/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import { Head, useForm } from '@inertiajs/react';
+"use client"
 
-export default function ForgotPassword({ status }) {
-    const { data, setData, post, processing, errors } = useForm({
-        email: '',
-    });
+import { useState } from "react"
+import { useForm } from "@inertiajs/react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
-    const submit = (e) => {
-        e.preventDefault();
+export default function ForgotPassword() {
+  const { data, setData, post, processing, errors } = useForm({
+    email: "",
+  })
 
-        post(route('password.email'));
-    };
+  const [localErrors, setLocalErrors] = useState({})
 
-    return (
-        <GuestLayout>
-            <Head title="Forgot Password" />
+  // ==============================
+  // FRONTEND VALIDATION
+  // ==============================
+  const validate = () => {
+    const newErrors = {}
 
-            <div className="mb-4 text-sm text-gray-600">
-                Forgot your password? No problem. Just let us know your email address and we will email you a password
-                reset link that will allow you to choose a new one.
-            </div>
+    if (!data.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      newErrors.email = "Invalid email format"
+    }
 
-            {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
+    setLocalErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
-            <form onSubmit={submit}>
-                <TextInput
-                    id="email"
-                    type="email"
-                    name="email"
-                    value={data.email}
-                    className="mt-1 block w-full"
-                    isFocused={true}
-                    onChange={(e) => setData('email', e.target.value)}
-                />
+  // ==============================
+  // SUBMIT
+  // ==============================
+  const submit = (e) => {
+    e.preventDefault()
 
-                <InputError message={errors.email} className="mt-2" />
+    if (!validate()) {
+      toast.error("Please check your input ❌")
+      return
+    }
 
-                <div className="flex items-center justify-end mt-4">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Email Password Reset Link
-                    </PrimaryButton>
-                </div>
-            </form>
-        </GuestLayout>
-    );
+    post("/forgot-password", {
+      preserveScroll: true,
+
+      onSuccess: () => {
+        toast.success("Link reset dikirim ke email kamu 📩")
+        setData("email", "")
+      },
+
+      onError: () => {
+        toast.error("Email tidak ditemukan ❌")
+      },
+    })
+  }
+
+  const getError = (field) => localErrors[field] || errors[field]
+
+  return (
+    <div className="max-w-md w-full mx-auto mt-10 px-4 sm:px-0">
+      <div className="space-y-5">
+        <h1 className="text-2xl font-bold text-center">Forgot Password</h1>
+
+        <p className="text-sm text-muted-foreground text-center">
+          Enter your email and we’ll send you a link to reset your password.
+        </p>
+
+        <form onSubmit={submit} className="space-y-4 bg-white p-6 rounded-lg border shadow-sm">
+          
+          {/* EMAIL */}
+          <div className="grid gap-2">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={data.email}
+              onChange={(e) => setData("email", e.target.value)}
+              placeholder="your@email.com"
+              disabled={processing}
+              className={getError("email") ? "border-red-500" : ""}
+            />
+            {getError("email") && (
+              <p className="text-red-500 text-sm">{getError("email")}</p>
+            )}
+          </div>
+
+          {/* BUTTON */}
+          <Button
+            className="w-full h-11 text-sm"
+            disabled={processing}
+          >
+            {processing ? "Sending..." : "Send Reset Link"}
+          </Button>
+
+        </form>
+
+        {/* Back to login */}
+        <p className="text-center text-sm text-muted-foreground">
+          Remember your password?{" "}
+          <a href="/login" className="text-primary underline">
+            Login
+          </a>
+        </p>
+      </div>
+    </div>
+  )
 }
