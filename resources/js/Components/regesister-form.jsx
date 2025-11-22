@@ -17,10 +17,8 @@ import {
 import { toast } from "sonner";
 
 export function RegisterForm({ className, ...props }) {
-  // Ambil dropdown dari backend
   const { departments, sub_departments, gateways, positions } = usePage().props;
 
-  // Form state
   const { data, setData, post, processing, errors } = useForm({
     name: "",
     email: "",
@@ -32,39 +30,84 @@ export function RegisterForm({ className, ...props }) {
     password_confirmation: "",
   });
 
+  const [localErrors, setLocalErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
 
-  // VALIDATION FE
+  // ===========================
+  // FRONTEND VALIDATION
+  // ===========================
   const validate = () => {
-    if (!data.name.trim()) return "Full name is required";
-    if (!data.email.includes("@")) return "Invalid email format";
+    const newErrors = {};
 
-    if (!data.department_id) return "Department is required";
-    if (!data.sub_department_id) return "Sub department is required";
-    if (!data.gateway_id) return "Location / Gateway is required";
-    if (!data.position_id) return "Position is required";
+    // Name
+    if (!data.name.trim()) newErrors.name = "Full name is required";
 
-    if (data.password.length < 6)
-      return "Password must be at least 6 characters";
+    // Email
+    if (!data.email.trim())
+      newErrors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
+      newErrors.email = "Invalid email format";
 
-    if (data.password !== data.password_confirmation)
-      return "Password confirmation does not match";
+    // Dropdowns
+    if (!data.department_id) newErrors.department_id = "Department is required";
+    if (!data.sub_department_id)
+      newErrors.sub_department_id = "Sub Department is required";
+    if (!data.gateway_id) newErrors.gateway_id = "Gateway is required";
+    if (!data.position_id) newErrors.position_id = "Position is required";
 
-    return null;
+    // Password
+    if (!data.password)
+      newErrors.password = "Password is required";
+    else if (data.password.length < 8)
+      newErrors.password = "Password must be at least 8 characters";
+    else if (!/[A-Z]/.test(data.password))
+      newErrors.password =
+        "Password must contain at least 1 uppercase letter (A-Z)";
+    else if (!/[0-9]/.test(data.password))
+      newErrors.password =
+        "Password must contain at least 1 number (0-9)";
+
+    // Confirm Password
+    if (!data.password_confirmation)
+      newErrors.password_confirmation = "Please confirm your password";
+    else if (data.password !== data.password_confirmation)
+      newErrors.password_confirmation = "Password confirmation does not match";
+
+    setLocalErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
+  // ===========================
+  // SUBMIT FORM
+  // ===========================
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const err = validate();
-    if (err) return toast.error(err);
+    if (!validate()) {
+      toast.error("Please check the form again");
+      return;
+    }
 
     post("/register", {
       preserveScroll: true,
-      onSuccess: () => toast.success("Register berhasil 🎉"),
-      onError: () => toast.error("Gagal mendaftar ❌ periksa kembali data Anda"),
+      onError: () => {
+        toast.error("Registration failed ❌");
+      },
+      onSuccess: () => {
+        toast.success("Registration successful 🎉");
+      },
     });
+  };
+
+  // ===========================
+  // MERGE LOCAL ERROR + BACKEND ERROR
+  // ===========================
+  const getError = (field) => {
+    if (localErrors[field]) return localErrors[field];
+    if (errors[field]) return errors[field];
+    return null;
   };
 
   return (
@@ -84,16 +127,26 @@ export function RegisterForm({ className, ...props }) {
         </p>
       </div>
 
+      {/* Global error (server / rate limit) */}
+      {(errors.server || errors.rate) && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2">
+          {errors.server || errors.rate}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* NAME */}
         <div className="grid gap-2">
           <Label>Full Name</Label>
           <Input
-            placeholder="Salis Ahmad"
+            placeholder="Your full name"
             value={data.name}
+            disabled={processing}
             onChange={(e) => setData("name", e.target.value)}
           />
-          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+          {getError("name") && (
+            <p className="text-red-500 text-sm">{getError("name")}</p>
+          )}
         </div>
 
         {/* EMAIL */}
@@ -101,12 +154,13 @@ export function RegisterForm({ className, ...props }) {
           <Label>Email</Label>
           <Input
             type="email"
-            placeholder="user@appcare.id"
+            placeholder="Your email address"
             value={data.email}
+            disabled={processing}
             onChange={(e) => setData("email", e.target.value)}
           />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email}</p>
+          {getError("email") && (
+            <p className="text-red-500 text-sm">{getError("email")}</p>
           )}
         </div>
 
@@ -116,6 +170,7 @@ export function RegisterForm({ className, ...props }) {
           <Select
             value={data.department_id}
             onValueChange={(v) => setData("department_id", v)}
+            disabled={processing}
           >
             <SelectTrigger>
               <SelectValue placeholder="Choose Department" />
@@ -128,8 +183,8 @@ export function RegisterForm({ className, ...props }) {
               ))}
             </SelectContent>
           </Select>
-          {errors.department_id && (
-            <p className="text-red-500 text-sm">{errors.department_id}</p>
+          {getError("department_id") && (
+            <p className="text-red-500 text-sm">{getError("department_id")}</p>
           )}
         </div>
 
@@ -139,6 +194,7 @@ export function RegisterForm({ className, ...props }) {
           <Select
             value={data.sub_department_id}
             onValueChange={(v) => setData("sub_department_id", v)}
+            disabled={processing}
           >
             <SelectTrigger>
               <SelectValue placeholder="Choose Sub Department" />
@@ -151,17 +207,20 @@ export function RegisterForm({ className, ...props }) {
               ))}
             </SelectContent>
           </Select>
-          {errors.sub_department_id && (
-            <p className="text-red-500 text-sm">{errors.sub_department_id}</p>
+          {getError("sub_department_id") && (
+            <p className="text-red-500 text-sm">
+              {getError("sub_department_id")}
+            </p>
           )}
         </div>
 
-        {/* LOCATION */}
+        {/* GATEWAY */}
         <div className="grid gap-2">
-          <Label>Location / Gateway</Label>
+          <Label>Gateway</Label>
           <Select
             value={data.gateway_id}
             onValueChange={(v) => setData("gateway_id", v)}
+            disabled={processing}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select Gateway" />
@@ -174,8 +233,8 @@ export function RegisterForm({ className, ...props }) {
               ))}
             </SelectContent>
           </Select>
-          {errors.gateway_id && (
-            <p className="text-red-500 text-sm">{errors.gateway_id}</p>
+          {getError("gateway_id") && (
+            <p className="text-red-500 text-sm">{getError("gateway_id")}</p>
           )}
         </div>
 
@@ -185,6 +244,7 @@ export function RegisterForm({ className, ...props }) {
           <Select
             value={data.position_id}
             onValueChange={(v) => setData("position_id", v)}
+            disabled={processing}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select Position" />
@@ -197,8 +257,8 @@ export function RegisterForm({ className, ...props }) {
               ))}
             </SelectContent>
           </Select>
-          {errors.position_id && (
-            <p className="text-red-500 text-sm">{errors.position_id}</p>
+          {getError("position_id") && (
+            <p className="text-red-500 text-sm">{getError("position_id")}</p>
           )}
         </div>
 
@@ -210,6 +270,7 @@ export function RegisterForm({ className, ...props }) {
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={data.password}
+              disabled={processing}
               onChange={(e) => setData("password", e.target.value)}
             />
             <button
@@ -220,8 +281,8 @@ export function RegisterForm({ className, ...props }) {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password}</p>
+          {getError("password") && (
+            <p className="text-red-500 text-sm">{getError("password")}</p>
           )}
         </div>
 
@@ -233,6 +294,7 @@ export function RegisterForm({ className, ...props }) {
               type={showPassword2 ? "text" : "password"}
               placeholder="••••••••"
               value={data.password_confirmation}
+              disabled={processing}
               onChange={(e) =>
                 setData("password_confirmation", e.target.value)
               }
@@ -245,8 +307,14 @@ export function RegisterForm({ className, ...props }) {
               {showPassword2 ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {getError("password_confirmation") && (
+            <p className="text-red-500 text-sm">
+              {getError("password_confirmation")}
+            </p>
+          )}
         </div>
 
+        {/* BUTTON */}
         <Button className="w-full" disabled={processing}>
           {processing ? "Processing..." : "Create Account"}
         </Button>

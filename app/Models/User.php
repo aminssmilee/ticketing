@@ -15,8 +15,6 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-
-        // relasi ID baru
         'department_id',
         'sub_department_id',
         'gateway_id',
@@ -30,31 +28,24 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-
-        // CAST penting supaya ID tidak null
-        'department_id' => 'integer',
-        'sub_department_id' => 'integer',
-        'gateway_id' => 'integer',
-        'position_id' => 'integer',
     ];
 
-    // Auto hash password
-    public function setPasswordAttribute($value)
-    {
-        // Jika bukan bcrypt hash → hash
-        if (strlen($value) < 60) {
-            $this->attributes['password'] = bcrypt($value);
-        } else {
-            $this->attributes['password'] = $value;
-        }
-    }
+    // Kalau mau tetap pakai auto-hash bisa, tapi Hash::make di controller sudah cukup.
+    // public function setPasswordAttribute($value)
+    // {
+    //     if (strlen($value) < 60) {
+    //         $this->attributes['password'] = bcrypt($value);
+    //     } else {
+    //         $this->attributes['password'] = $value;
+    //     }
+    // }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    // OPTIONAL: relasi Eloquent
+    // Relasi optional, kalau mau dipakai nanti
     public function department()
     {
         return $this->belongsTo(Department::class);
