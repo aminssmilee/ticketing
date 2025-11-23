@@ -93,10 +93,10 @@ export function RegisterForm({ className, ...props }) {
     post("/register", {
       preserveScroll: true,
       onError: () => {
-        toast.error("Registration failed ❌");
+        toast.error("Registration failed");
       },
       onSuccess: () => {
-        toast.success("Registration successful 🎉");
+        toast.success("Registration successful");
       },
     });
   };
