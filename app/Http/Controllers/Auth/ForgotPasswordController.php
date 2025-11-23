@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
+use Exception;
 
 class ForgotPasswordController extends Controller
 {
@@ -20,13 +21,19 @@ class ForgotPasswordController extends Controller
             "email" => "required|email"
         ]);
 
-        // Kirim reset email
-        $status = Password::sendResetLink(
-            $request->only("email")
-        );
+        try {
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with("success", __($status))
-            : back()->withErrors(["email" => __($status)]);
+            $status = Password::sendResetLink(
+                $request->only("email")
+            );
+
+            return $status === Password::RESET_LINK_SENT
+                ? back()->with("success", "Email reset berhasil dikirim.")
+                : back()->withErrors(["email" => "Email tidak ditemukan."]);
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                "server" => "Gagal mengirim email. Silakan coba lagi."
+            ]);
+        }
     }
 }
