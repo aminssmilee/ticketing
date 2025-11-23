@@ -1,49 +1,39 @@
+// components/data-table/ticket-columns.jsx
 import { Badge } from "@/components/ui/badge"
 
 export const ticketColumns = [
-  {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("id")}</div>,
-  },
-  {
-    accessorKey: "gateway",
-    header: "Gateway",
-  },
-  {
-    accessorKey: "serial",
-    header: "Serial Number",
-  },
-  {
-    accessorKey: "flag",
-    header: "Flag",
-  },
-  {
-    accessorKey: "alarm",
-    header: "Alarm",
-  },
+  { accessorKey: "ticket_number", header: "Ticket Number" },
+  { accessorKey: "gateway", header: "Gateway" },
+  { accessorKey: "ticket_date", header: "Ticket Date" },
+  { accessorKey: "start_date", header: "Start Date" },
+  { accessorKey: "category", header: "Category" },
+  { accessorKey: "subcategory", header: "Sub Category" },
+  { accessorKey: "flag", header: "Flag" },
+  { accessorKey: "alarm", header: "Alarm" },
+  { accessorKey: "indication", header: "Indication" },
+  { accessorKey: "updated_by", header: "Updated By" },
+  { accessorKey: "pic", header: "PIC" },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status")
-
+      const value = row.getValue("status")
       return (
         <Badge
-          variant="outline"
-          className={
-            status === "Open"
-              ? "bg-red-100 text-red-600 border-red-300"
-              : "bg-green-100 text-green-600 border-green-300"
+          variant={
+            value === "Open"
+              ? "destructive"
+              : value === "Close"
+              ? "secondary"
+              : "outline"
           }
         >
-          {status}
+          {value}
         </Badge>
       )
     },
   },
-  {
-    accessorKey: "pic",
-    header: "PIC",
-  },
+  { accessorKey: "duration", header: "Duration" },
+  { accessorKey: "assigned_date", header: "Assigned Date" },
+  { accessorKey: "end_date", header: "End Date" },
 ]
