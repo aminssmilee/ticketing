@@ -39,7 +39,7 @@ export function TicketTable({ columns, data }) {
                     <TableCell
                       key={col.accessorKey}
                       className="text-xs text-blue-600 underline cursor-pointer whitespace-nowrap"
-                      onClick={() => (window.location.href = `/ticket/${value}`)}
+                      onClick={() => (window.location.href = `/ticket/view/${value}`)}
                     >
                       {value}
                     </TableCell>

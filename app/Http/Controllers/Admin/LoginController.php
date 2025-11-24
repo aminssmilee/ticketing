@@ -9,23 +9,22 @@ use Inertia\Inertia;
 
 class LoginController extends Controller
 {
-    // Halaman login
+    // Halaman Login
     public function index()
     {
         if (Auth::check()) {
             return redirect()->route('ticket.dashboard');
         }
 
-        // 👇 Pastikan path di sini sama dengan folder kamu di `resources/js/pages`
-        return Inertia::render('login');
+        return Inertia::render('Login'); // Sesuaikan dengan file di resources/js/Pages/Login.jsx
     }
 
-    // Proses login
+    // Proses Login
     public function authenticate(Request $request)
     {
         $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required', 'min:6'],
+            'password' => ['required'],
         ]);
 
         $credentials = $request->only('email', 'password');
@@ -33,16 +32,18 @@ class LoginController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            // Cek role admin
-            if (Auth::user()->role !== 'admin') {
-                Auth::logout();
-                return back()->withErrors(['email' => 'Akses ditolak. Bukan admin.']);
-            }
+            // Kalau hanya admin boleh login → gunakan ini:
+            // if (Auth::user()->role !== 'admin') {
+            //     Auth::logout();
+            //     return back()->withErrors(['email' => 'Akses ditolak. Bukan admin.']);
+            // }
 
             return redirect()->route('ticket.dashboard');
         }
 
-        return back()->withErrors(['email' => 'Email atau password salah.']);
+        return back()->withErrors([
+            'email' => 'Email atau password salah.',
+        ]);
     }
 
     // Logout
@@ -51,6 +52,7 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('ticket.login');
+
+        return redirect()->route('auth.login');
     }
 }

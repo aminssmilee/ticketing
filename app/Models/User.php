@@ -30,22 +30,22 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    // Kalau mau tetap pakai auto-hash bisa, tapi Hash::make di controller sudah cukup.
-    // public function setPasswordAttribute($value)
-    // {
-    //     if (strlen($value) < 60) {
-    //         $this->attributes['password'] = bcrypt($value);
-    //     } else {
-    //         $this->attributes['password'] = $value;
-    //     }
-    // }
-
+    /*
+    |--------------------------------------------------------------------------
+    | HELPERS
+    |--------------------------------------------------------------------------
+    */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    // Relasi optional, kalau mau dipakai nanti
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONS
+    |--------------------------------------------------------------------------
+    */
+
     public function department()
     {
         return $this->belongsTo(Department::class);
