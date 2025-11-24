@@ -34,23 +34,32 @@
     --ring: 211 51% 36%;
 
     /* === CHART COLOR SET === */
-    --chart-1: 211 51% 36%; /* navy */
-    --chart-2: 45 75% 55%;  /* gold */
+    --chart-1: 211 51% 36%;
+    /* navy */
+    --chart-2: 45 75% 55%;
+    /* gold */
     --chart-3: 210 40% 50%;
     --chart-4: 180 30% 45%;
     --chart-5: 0 0% 40%;
 
     --radius: 0.5rem;
 
-    /* === SIDEBAR (LIGHT) === */
-    --sidebar-background: 0 0% 100%;
+    /* === SIDEBAR (BLUE THEME) === */
+    /* === SIDEBAR (PSN BLUE THEME) === */
+    --sidebar-background: 211 100% 96%;
+    /* Biru muda soft */
     --sidebar-foreground: 211 51% 36%;
+    /* Biru PSN */
     --sidebar-primary: 211 51% 36%;
+    /* Biru PSN */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 45 75% 55%;
-    --sidebar-accent-foreground: 240 10% 4%;
-    --sidebar-border: 220 10% 85%;
+    --sidebar-accent: 211 51% 90%;
+    /* Biru sangat muda */
+    --sidebar-accent-foreground: 211 51% 36%;
+    --sidebar-border: 211 30% 85%;
     --sidebar-ring: 211 51% 36%;
+
+
   }
 
   .dark {
@@ -89,14 +98,19 @@
     --chart-5: 0 0% 70%;
 
     /* === SIDEBAR DARK === */
-    --sidebar-background: 220 15% 13%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 211 51% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 45 75% 55%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 220 10% 25%;
-    --sidebar-ring: 45 75% 55%;
+    /* === SIDEBAR (PSN BLUE — STRONGER) === */
+
+--sidebar-background: 211 51% 88%;
+--sidebar-foreground: 211 51% 28%;
+--sidebar-primary: 211 51% 36%;
+--sidebar-primary-foreground: 0 0% 100%;
+
+--sidebar-accent: 211 51% 85%;         /* Biru muda */
+--sidebar-accent-foreground: 211 51% 30%;
+
+--sidebar-border: 211 30% 75%;         /* Border kebiruan */
+--sidebar-ring: 211 51% 36%;
+
   }
 }
 

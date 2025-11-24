@@ -7,7 +7,8 @@ import {
   ListIcon,
   FileTextIcon,
   BookOpenIcon,
-  SettingsIcon
+  SettingsIcon,
+  UsersIcon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -23,8 +24,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ ...props }) {
+import logo from "/public/img/psn.jpg"
 
+export function AppSidebar({ ...props }) {
   const { auth } = usePage().props
   const user = auth?.user || {
     name: "Guest",
@@ -32,30 +34,42 @@ export function AppSidebar({ ...props }) {
     avatar: "/avatars/default.png",
   }
 
+  // ====== MENU UTAMA ======
+  const navMainItems = [
+    {
+      title: "Open Ticket",
+      url: route("ticket.open"),
+      icon: LayoutDashboardIcon,
+    },
+    {
+      title: "List Ticket",
+      url: route("ticket.list"),
+      icon: ListIcon,
+    },
+    {
+      title: "Report Ticket",
+      url: route("ticket.report"),
+      icon: FileTextIcon,
+    },
+    {
+      title: "Work Instruction",
+      url: route("ticket.wi"),
+      icon: BookOpenIcon,
+    },
+  ]
+
+  // ====== TAMBAHKAN KALAU ROLE ADMIN ======
+  if (auth?.user?.role === "admin") {
+    navMainItems.push({
+      title: "User Management",
+      url: route("ticket.users.index"), // FIX: gunakan route yg benar!
+      icon: UsersIcon,
+    })
+  }
+
   const data = {
     user,
-    navMain: [
-      {
-        title: "Open Ticket",
-        url: route("ticket.open"),
-        icon: LayoutDashboardIcon,
-      },
-      {
-        title: "List Ticket",
-        url: route("ticket.list"),
-        icon: ListIcon,
-      },
-      {
-        title: "Report Ticket",
-        url: route("ticket.report"),
-        icon: FileTextIcon,
-      },
-      {
-        title: "Work Instruction",
-        url: route("ticket.wi"),
-        icon: BookOpenIcon,
-      },
-    ],
+    navMain: navMainItems,
     navSecondary: [
       {
         title: "Settings",
@@ -68,17 +82,31 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       {/* Header */}
+      {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href={route("ticket.dashboard")}>
-                <span className="text-base font-semibold">PSN Ticketing</span>
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-1.5 flex items-center gap-2"
+            >
+              <a href={route("ticket.dashboard")} className="flex items-center gap-3">
+
+                {/* LOGO */}
+                <img
+                  src={logo}     // ganti sesuai lokasi logo kamu
+                  alt="Logo"
+                  className="w-12 h-10 object-contain"
+                />
+
+                {/* TITLE */}
+                <span className="text-base font-semibold">Ticketing</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
 
       {/* Content */}
       <SidebarContent>

@@ -1,6 +1,5 @@
 <?php
 
-// app/Models/Location.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,8 +9,24 @@ class Gateway extends Model
 {
     use HasFactory;
 
-    // karena migration-nya pakai "gateways", kita kasih nama tabel manual
     protected $table = 'gateways';
 
-    protected $fillable = ['code', 'name'];
+    protected $fillable = [
+        'code',      // contoh: GW01
+        'name',      // contoh: Batam Gateway
+        'location',  // optional
+        'region',    // optional (Sumatera, Kalimantan, Jawa)
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONS
+    |--------------------------------------------------------------------------
+    */
+
+    // Gateway punya banyak tiket
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class, 'gateway_id');
+    }
 }
