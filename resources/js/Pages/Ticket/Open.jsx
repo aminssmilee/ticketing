@@ -101,6 +101,22 @@ const CATEGORY_DATA = {
 };
 // ================================
 
+const getLocalDateTime = () => {
+  const d = new Date();
+  const pad = (n) => n.toString().padStart(2, "0");
+
+  return (
+    d.getFullYear() +
+    "-" +
+    pad(d.getMonth() + 1) +
+    "-" +
+    pad(d.getDate()) +
+    "T" +
+    pad(d.getHours()) +
+    ":" +
+    pad(d.getMinutes())
+  );
+};
 
 // ================================
 // ⬇️  MULAI COMPONENT OPEN()
@@ -111,7 +127,7 @@ export default function Open() {
 
   const [selectedCategory, setSelectedCategory] = useState("");
   const subCategories = selectedCategory ? CATEGORY_DATA[selectedCategory] : [];
-  const now = new Date().toISOString().slice(0, 16);
+  const now = getLocalDateTime();
 
   const [form, setForm] = useState({
     gateway_id: gateway?.id ?? null,
@@ -126,7 +142,6 @@ export default function Open() {
     description: "",
   });
 
-  
 
   const submitTicket = () => {
     router.post("/ticket/open", form);

@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+// use App\Http\Controllers\TicketController;
+// use App\Http\Controllers\Admin\UserController;
+// use App\Http\Controllers\Ticket\DashboardController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Ticket\DashboardController;
@@ -20,7 +23,12 @@ use App\Http\Controllers\Ticket\DashboardController;
 Route::get('/', [LoginController::class, 'index'])->name('auth.login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('auth.login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('auth.logout');
+Route::get('/', [LoginController::class, 'index'])->name('auth.login');
+Route::post('/login', [LoginController::class, 'authenticate'])->name('auth.login.submit');
+Route::post('/logout', [LoginController::class, 'logout'])->name('auth.logout');
 
+Route::get('/register', [RegisterController::class, 'index'])->name('auth.register');
+Route::post('/register', [RegisterController::class, 'store'])->name('auth.register.submit');
 Route::get('/register', [RegisterController::class, 'index'])->name('auth.register');
 Route::post('/register', [RegisterController::class, 'store'])->name('auth.register.submit');
 
@@ -44,6 +52,8 @@ Route::prefix('ticket')
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
         // Open Ticket (Form)
         Route::get('/open', [TicketController::class, 'open'])
@@ -53,16 +63,20 @@ Route::prefix('ticket')
         Route::post('/open', [TicketController::class, 'store'])
             ->name('store');
 
-
         // List Ticket
-        Route::get('/list', fn() => Inertia::render('Ticket/List'))
+        Route::get('/list', [TicketController::class, 'list'])
             ->name('list');
+
 
         // Report Ticket
         Route::get('/report', fn() => Inertia::render('Ticket/Report'))
             ->name('report');
+        Route::get('/report', fn() => Inertia::render('Ticket/Report'))
+            ->name('report');
 
         // Work Instruction
+        Route::get('/wi', fn() => Inertia::render('Ticket/WorkInstruction'))
+            ->name('wi');
         Route::get('/wi', fn() => Inertia::render('Ticket/WorkInstruction'))
             ->name('wi');
 
@@ -70,13 +84,20 @@ Route::prefix('ticket')
         Route::get('/settings', fn() => Inertia::render('Ticket/Settings'))
             ->name('settings');
 
-        // Update Ticket
-        Route::get('/update/{ticket_number}', fn() => Inertia::render('Ticket/UpdateTicket'))
+        // Update Ticket Page
+        Route::get('/update/{ticket_number}', [TicketController::class, 'edit'])
             ->name('update');
 
+        // Submit update
+        Route::post('/update/{ticket_number}', [TicketController::class, 'update'])
+            ->name('update.submit');
+
+
         // view Ticket
-        Route::get('/view/{ticket_number}', fn() => Inertia::render('Ticket/ViewTicket'))
-            ->name('view');
+        Route::get('/view/{ticket_number}', [TicketController::class, 'show'])
+            ->where('ticket_number', '[A-Za-z0-9\-_]+')
+            ->name('ticket.view');
+
 
 
         /*
@@ -105,7 +126,11 @@ Route::prefix('ticket')
         | PUBLIC TICKET VIEW (SAFE VERSION)
         |--------------------------------------------------------------------------
         */
+        // Route::get('/view/{ticket_number}', [TicketController::class, 'show'])
+        //     ->where('ticket_number', '[A-Za-z0-9\-_]+')
+        //     ->name('show');
         Route::get('/view/{ticket_number}', [TicketController::class, 'show'])
             ->where('ticket_number', '[A-Za-z0-9\-_]+')
-            ->name('show');
+            ->name('view');   // cukup "view"
+
     });

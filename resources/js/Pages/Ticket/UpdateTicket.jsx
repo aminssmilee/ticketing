@@ -11,19 +11,31 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
-
-import { usePage } from "@inertiajs/react"   // ⬅ WAJIB
+import { usePage, router } from "@inertiajs/react"
 
 export default function UpdateTicket() {
   const { props } = usePage()
+  const { ticket } = props
 
-  // Ambil data ticket dari props
-  const ticket = props.ticket || {}   // ⬅ SAFE fallback biar tidak undefined
-
-  // State dengan fallback string kosong
+  // State input user
   const [flag, setFlag] = useState(ticket.flag ?? "")
   const [status, setStatus] = useState(ticket.status ?? "Open")
+  const [description, setDescription] = useState("")
+  const [action, setAction] = useState("")
+  const [indication, setIndication] = useState("")
+  const [endDate, setEndDate] = useState("")
 
+  // ============= SUBMIT UPDATE =============
+  const handleSubmit = () => {
+    router.post(route("ticket.update.submit", ticket.ticket_number), {
+      flag,
+      indication,
+      action,
+      description,
+      status,
+      end_date: status === "Close" ? endDate : null,
+    })
+  }
 
   return (
     <SidebarProvider>
@@ -103,13 +115,34 @@ export default function UpdateTicket() {
               {/* Indication */}
               <div className="md:col-span-2">
                 <Label>Indication</Label>
-                <Input value={ticket.indication} disabled />
+                <Textarea
+                  rows={3}
+                  value={indication}
+                  onChange={(e) => setIndication(e.target.value)}
+                  placeholder="Tulis indikasi di sini..."
+                />
+              </div>
+
+              {/* Action */}
+              <div className="md:col-span-2">
+                <Label>Action</Label>
+                <Textarea
+                  rows={3}
+                  value={action}
+                  onChange={(e) => setAction(e.target.value)}
+                  placeholder="Tulis aksi di sini..."
+                />
               </div>
 
               {/* Description */}
               <div className="md:col-span-2">
                 <Label>Description</Label>
-                <Textarea rows={5} defaultValue={ticket.description} />
+                <Textarea
+                  rows={5}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Tulis update di sini..."
+                />
               </div>
 
               {/* Update By */}
@@ -129,7 +162,7 @@ export default function UpdateTicket() {
                 <Label>Status</Label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Open / Close / Update / Assign" />
+                    <SelectValue placeholder="Pilih Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Open">Open</SelectItem>
@@ -140,11 +173,15 @@ export default function UpdateTicket() {
                 </Select>
               </div>
 
-              {/* End Date – muncul hanya jika status Close */}
+              {/* END DATE — jika status Close */}
               {status === "Close" && (
                 <div>
                   <Label>End Date</Label>
-                  <Input type="datetime-local" />
+                  <Input
+                    type="datetime-local"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
                 </div>
               )}
 
@@ -152,8 +189,11 @@ export default function UpdateTicket() {
 
             {/* SUBMIT BUTTON */}
             <div className="mt-6 flex justify-end">
-              <Button className="px-6">Update Ticket</Button>
+              <Button className="px-6" onClick={handleSubmit}>
+                Update Ticket
+              </Button>
             </div>
+
           </div>
         </div>
       </SidebarInset>

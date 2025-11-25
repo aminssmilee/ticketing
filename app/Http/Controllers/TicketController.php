@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use App\Models\Ticket;
 
 class TicketController extends Controller
 {
@@ -29,26 +30,52 @@ class TicketController extends Controller
      */
     public function show($ticket_number)
     {
-        // ❗ Sementara DUMMY (belum pakai DB)
-        // Nanti tinggal diganti pakai Ticket::where('ticket_number',$ticket_number)->first()
-        $dummyTicket = [
-            "ticket_number" => $ticket_number,
-            "gateway"       => "GW01 Batam",
-            "category"      => "RF",
-            "subcategory"   => "BUC",
-            "status"        => "Open",
-            "alarm"         => "BUC1 Hang",
-            "indication"    => "Power Low",
-            "action"        => "Restart BUC",
-            "pic"           => "Team RF",
-            "created_at"    => "2025-08-14 08:00",
-            "updated_at"    => "2025-08-14 12:23",
-        ];
+        $ticket = \App\Models\Ticket::with(['gateway', 'user', 'updates'])
+            ->where('ticket_number', $ticket_number)
+            ->firstOrFail();
 
-        return Inertia::render("Ticket/ViewTicket", [
-            "ticket" => $dummyTicket,
+        // ================================
+        // 🔥 Ambil UPDATE HISTORY (real)
+        // ================================
+        $updates = $ticket->updates()
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($u) {
+                return [
+                    "date"        => $u->created_at->format('Y-m-d H:i'),
+                    "updated_by"  => $u->updated_by,
+                    "flag"        => $u->flag,
+                    "indication"  => $u->indication,
+                    "action"      => $u->action,
+                    "description" => $u->description,
+                ];
+            });
+
+        return Inertia::render('Ticket/ViewTicket', [
+            "ticket" => [
+                'ticket_number' => $ticket->ticket_number,
+                'gateway'       => $ticket->gateway->name ?? '-',
+                'ticket_date'   => $ticket->created_at->format('Y-m-d H:i'),
+                'start_date'    => $ticket->start_date,
+                'category'      => $ticket->category,
+                'subcategory'   => $ticket->sub_category,
+                'flag'          => strtoupper($ticket->flag),
+                'alarm'         => $ticket->alarm,
+                'indication'    => $ticket->indication,
+                'updated_by'    => $ticket->user->name ?? '-',
+                'pic'           => $ticket->gateway->name ?? '-',
+                'status'        => ucfirst($ticket->status),
+                'duration'      => "-",
+                'assigned_date' => $ticket->start_date,
+                'end_date'      => $ticket->end_date ?? "-",
+            ],
+
+            // 🔥 Kirim ke FE
+            "updates" => $updates
         ]);
     }
+
+
     public function store(Request $request)
     {
         $request->validate([
@@ -87,5 +114,95 @@ class TicketController extends Controller
 
         return redirect()->route('ticket.list')
             ->with('success', 'Ticket berhasil dibuat!');
+    }
+
+    public function list()
+    {
+        $tickets = \App\Models\Ticket::with('gateway')
+            // ->where('user_id', auth()->id())  // hanya tiket user
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($t) {
+                return [
+                    'ticket_number' => $t->ticket_number,
+                    'gateway' => $t->gateway->name ?? '-',
+                    'ticket_date' => $t->created_at->format('Y-m-d H:i'),
+                    'start_date' => $t->start_date,
+                    'category' => $t->category,
+                    'subcategory' => $t->sub_category,
+                    'flag' => strtoupper($t->flag),
+                    'alarm' => $t->alarm,
+                    'indication' => $t->indication,
+                    'updated_by' => $t->user->name ?? '-', // opsional
+                    'pic' => $t->gateway->code . ' - ' . $t->gateway->name ?? "-",
+                    'status' => ucfirst($t->status),
+                    'duration' => "-",
+                    'assigned_date' => $t->start_date,
+                    'end_date' => $t->end_date ?? "-",
+                ];
+            });
+
+        return Inertia::render("Ticket/List", [
+            "tickets" => $tickets,
+        ]);
+    }
+
+    public function edit($ticket_number)
+    {
+        $ticket = Ticket::where('ticket_number', $ticket_number)->firstOrFail();
+
+        return Inertia::render('Ticket/UpdateTicket', [
+            "ticket" => [
+                "ticket_number" => $ticket->ticket_number,
+                "gateway"       => $ticket->gateway->code . " " . $ticket->gateway->name,
+                "ticket_date"   => $ticket->created_at,
+                "start_date"    => $ticket->start_date,
+                "category"      => $ticket->category,
+                "subcategory"   => $ticket->sub_category,
+                "serial_number" => $ticket->serial_number,
+                "flag"          => $ticket->flag,
+                "alarm"         => $ticket->alarm,
+                "indication"    => $ticket->indication,
+                "description"   => $ticket->description,
+                "updated_by"    => auth()->user()->name, // user yang login
+                "pic"           => auth()->user()->Department->name ?? auth()->user()->department->name ?? "-", // PIC = dept user
+
+                "status"        => $ticket->status,
+            ]
+        ]);
+    }
+
+
+
+
+    public function update(Request $request, $ticket_number)
+    {
+        $ticket = Ticket::where('ticket_number', $ticket_number)->firstOrFail();
+
+        $request->validate([
+            'flag' => 'required|string',
+            'indication' => 'required|string',
+            'action' => 'required|string',
+            'description' => 'nullable|string',
+        ]);
+
+        // Simpan update ke tabel ticket_updates (log)
+        $ticket->updates()->create([
+            'updated_by' => auth()->user()->name,
+            'flag' => $request->flag,
+            'indication' => $request->indication,
+            'action' => $request->action,
+            'description' => $request->description,
+        ]);
+
+        // Update status ticket atau last update
+        $ticket->update([
+            'status' => 'Update',
+            'updated_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('ticket.view', $ticket_number)
+            ->with('success', 'Ticket berhasil diupdate!');
     }
 }
