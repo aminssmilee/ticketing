@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+// use App\Http\Controllers\TicketController;
+// use App\Http\Controllers\Admin\UserController;
+// use App\Http\Controllers\Ticket\DashboardController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Ticket\DashboardController;
@@ -20,7 +23,12 @@ use App\Http\Controllers\Ticket\DashboardController;
 Route::get('/', [LoginController::class, 'index'])->name('auth.login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('auth.login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('auth.logout');
+Route::get('/', [LoginController::class, 'index'])->name('auth.login');
+Route::post('/login', [LoginController::class, 'authenticate'])->name('auth.login.submit');
+Route::post('/logout', [LoginController::class, 'logout'])->name('auth.logout');
 
+Route::get('/register', [RegisterController::class, 'index'])->name('auth.register');
+Route::post('/register', [RegisterController::class, 'store'])->name('auth.register.submit');
 Route::get('/register', [RegisterController::class, 'index'])->name('auth.register');
 Route::post('/register', [RegisterController::class, 'store'])->name('auth.register.submit');
 
@@ -44,6 +52,8 @@ Route::prefix('ticket')
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
         // Open Ticket (Form)
         Route::get('/open', [TicketController::class, 'open'])
@@ -61,8 +71,12 @@ Route::prefix('ticket')
         // Report Ticket
         Route::get('/report', fn() => Inertia::render('Ticket/Report'))
             ->name('report');
+        Route::get('/report', fn() => Inertia::render('Ticket/Report'))
+            ->name('report');
 
         // Work Instruction
+        Route::get('/wi', fn() => Inertia::render('Ticket/WorkInstruction'))
+            ->name('wi');
         Route::get('/wi', fn() => Inertia::render('Ticket/WorkInstruction'))
             ->name('wi');
 
