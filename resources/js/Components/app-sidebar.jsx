@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/sidebar"
 
 import logo from "/public/img/psn.jpg"
+import wa from "/public/icon/whatsapp-svgrepo-com.svg"
 
 export function AppSidebar({ ...props }) {
   const { auth } = usePage().props
@@ -72,12 +73,12 @@ export function AppSidebar({ ...props }) {
     navMain: navMainItems,
     navSecondary: [
       {
-        title: "Settings",
-        url: route("ticket.settings"),
-        icon: SettingsIcon,
+        title: "Admin WA",
+        url: "https://wa.me/628xxxxxxx", // ganti dengan nomor WA admin
+        icon: wa,
       },
     ],
-  }
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

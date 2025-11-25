@@ -205,4 +205,56 @@ class TicketController extends Controller
             ->route('ticket.view', $ticket_number)
             ->with('success', 'Ticket berhasil diupdate!');
     }
+
+    public function downloadReport(Request $request)
+    {
+        $tickets = Ticket::query()
+            ->when($request->start_date, fn($q) => $q->whereDate('start_date', '>=', $request->start_date))
+            ->when($request->end_date, fn($q) => $q->whereDate('start_date', '<=', $request->end_date))
+            ->when($request->category, fn($q) => $q->where('category', 'like', "%{$request->category}%"))
+            ->when($request->sub_category, fn($q) => $q->where('sub_category', 'like', "%{$request->sub_category}%"))
+            ->with('gateway')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $filename = "ticket_report_" . now()->format("Ymd_His") . ".csv";
+
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+        ];
+
+        $callback = function () use ($tickets) {
+            $file = fopen('php://output', 'w');
+
+            // Header CSV
+            fputcsv($file, [
+                "Ticket Number",
+                "Gateway",
+                "Category",
+                "Sub Category",
+                "Start Date",
+                "Status",
+                "Alarm",
+                "Indication"
+            ]);
+
+            foreach ($tickets as $t) {
+                fputcsv($file, [
+                    $t->ticket_number,
+                    $t->gateway->name ?? "-",
+                    $t->category,
+                    $t->sub_category,
+                    $t->start_date,
+                    $t->status,
+                    $t->alarm,
+                    $t->indication,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

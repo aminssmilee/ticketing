@@ -9,10 +9,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function NavSecondary({
-  items,
-  ...props
-}) {
+export function NavSecondary({ items, ...props }) {
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
@@ -20,8 +17,16 @@ export function NavSecondary({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
-                  <item.icon />
+                <a href={item.url} target="_blank">
+                  
+                  {/* ==== FIX AREA ==== */}
+                  {typeof item.icon === "string" ? (
+                    <img src={item.icon} className="h-4 w-4" alt="" />
+                  ) : (
+                    <item.icon className="h-4 w-4" />
+                  )}
+                  {/* ================== */}
+
                   <span>{item.title}</span>
                 </a>
               </SidebarMenuButton>

@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Ticket\DashboardController;
+use App\Http\Controllers\WorkInstructionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,18 +72,22 @@ Route::prefix('ticket')
         // Report Ticket
         Route::get('/report', fn() => Inertia::render('Ticket/Report'))
             ->name('report');
-        Route::get('/report', fn() => Inertia::render('Ticket/Report'))
-            ->name('report');
+        // REPORT DOWNLOAD
+        Route::get('/report/download', [TicketController::class, 'downloadReport'])
+            ->name('report.download');
+
 
         // Work Instruction
-        Route::get('/wi', fn() => Inertia::render('Ticket/WorkInstruction'))
-            ->name('wi');
-        Route::get('/wi', fn() => Inertia::render('Ticket/WorkInstruction'))
+        Route::get('/wi', [WorkInstructionController::class, 'index'])
             ->name('wi');
 
+        Route::post('/wi/upload', [WorkInstructionController::class, 'store'])
+            ->name('wi.upload');
+
+
         // Settings
-        Route::get('/settings', fn() => Inertia::render('Ticket/Settings'))
-            ->name('settings');
+        // Route::get('/settings', fn() => Inertia::render('Ticket/Settings'))
+        //     ->name('settings');
 
         // Update Ticket Page
         Route::get('/update/{ticket_number}', [TicketController::class, 'edit'])
