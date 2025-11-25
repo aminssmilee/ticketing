@@ -53,10 +53,10 @@ Route::prefix('ticket')
         Route::post('/open', [TicketController::class, 'store'])
             ->name('store');
 
-
         // List Ticket
-        Route::get('/list', fn() => Inertia::render('Ticket/List'))
+        Route::get('/list', [TicketController::class, 'list'])
             ->name('list');
+
 
         // Report Ticket
         Route::get('/report', fn() => Inertia::render('Ticket/Report'))
@@ -70,13 +70,20 @@ Route::prefix('ticket')
         Route::get('/settings', fn() => Inertia::render('Ticket/Settings'))
             ->name('settings');
 
-        // Update Ticket
-        Route::get('/update/{ticket_number}', fn() => Inertia::render('Ticket/UpdateTicket'))
+        // Update Ticket Page
+        Route::get('/update/{ticket_number}', [TicketController::class, 'edit'])
             ->name('update');
 
+        // Submit update
+        Route::post('/update/{ticket_number}', [TicketController::class, 'update'])
+            ->name('update.submit');
+
+
         // view Ticket
-        Route::get('/view/{ticket_number}', fn() => Inertia::render('Ticket/ViewTicket'))
-            ->name('view');
+        Route::get('/view/{ticket_number}', [TicketController::class, 'show'])
+            ->where('ticket_number', '[A-Za-z0-9\-_]+')
+            ->name('ticket.view');
+
 
 
         /*
@@ -105,7 +112,11 @@ Route::prefix('ticket')
         | PUBLIC TICKET VIEW (SAFE VERSION)
         |--------------------------------------------------------------------------
         */
+        // Route::get('/view/{ticket_number}', [TicketController::class, 'show'])
+        //     ->where('ticket_number', '[A-Za-z0-9\-_]+')
+        //     ->name('show');
         Route::get('/view/{ticket_number}', [TicketController::class, 'show'])
             ->where('ticket_number', '[A-Za-z0-9\-_]+')
-            ->name('show');
+            ->name('view');   // cukup "view"
+
     });

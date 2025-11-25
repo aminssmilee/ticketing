@@ -47,21 +47,20 @@ export function TicketTable({ columns, data }) {
                 }
 
                 // CUSTOM CELL
+                // CUSTOM CELL (FIX STRUCTURE)
                 if (col.cell) {
                   return (
-                    <TableCell
-                      key={col.accessorKey}
-                      className="text-xs whitespace-nowrap"
-                    >
+                    <TableCell key={col.accessorKey} className="text-xs whitespace-nowrap">
                       {col.cell({
                         row: {
-                          ...row,
-                          getValue: (k) => row[k],
+                          original: row, // ⬅ INI YANG PALING PENTING!!!
+                          getValue: (key) => row[key],
                         },
                       })}
                     </TableCell>
                   )
                 }
+
 
                 return (
                   <TableCell key={col.accessorKey} className="text-xs whitespace-nowrap">

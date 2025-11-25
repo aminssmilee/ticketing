@@ -25,6 +25,8 @@ class Ticket extends Model
         'action',
         'description',
         'status',
+        'created_by',
+        'updated_by',
     ];
 
 
@@ -56,5 +58,19 @@ class Ticket extends Model
     public function pic()
     {
         return $this->belongsTo(User::class, 'pic_id');
+    }
+    // Ticket.php
+    // public function gateway()
+    // {
+    //     return $this->belongsTo(Gateway::class);
+    // }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    public function updates()
+    {
+        return $this->hasMany(TicketUpdate::class);
     }
 }
