@@ -22,16 +22,26 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Inertia::share([
+
+            // ============================
+            // 🔐 SHARE AUTH DATA KE FE
+            // ============================
             'auth' => [
-                'user' => fn() => Auth::user()
+                'user' => fn () => Auth::user()
                     ? [
-                        'id' => Auth::user()->id,
-                        'name' => Auth::user()->name,
+                        'id'    => Auth::user()->id,
+                        'name'  => Auth::user()->name,
                         'email' => Auth::user()->email,
-                        'role' => Auth::user()->role,
+                        'role'  => Auth::user()->role,
                     ]
                     : null,
             ],
+
+            // ============================
+            // ✔ SHARE RECAPTCHA KE FE
+            // ============================
+            'recaptcha_site_key' => env('RECAPTCHA_SITE_KEY'),
+
         ]);
     }
 }

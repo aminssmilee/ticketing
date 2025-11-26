@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Ticket;
 
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\Ticket;
+use App\Http\Controllers\Controller;
 
 class TicketController extends Controller
 {
@@ -116,36 +117,54 @@ class TicketController extends Controller
             ->with('success', 'Ticket berhasil dibuat!');
     }
 
-    public function list()
-    {
-        $tickets = \App\Models\Ticket::with('gateway')
-            // ->where('user_id', auth()->id())  // hanya tiket user
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($t) {
-                return [
-                    'ticket_number' => $t->ticket_number,
-                    'gateway' => $t->gateway->name ?? '-',
-                    'ticket_date' => $t->created_at->format('Y-m-d H:i'),
-                    'start_date' => $t->start_date,
-                    'category' => $t->category,
-                    'subcategory' => $t->sub_category,
-                    'flag' => strtoupper($t->flag),
-                    'alarm' => $t->alarm,
-                    'indication' => $t->indication,
-                    'updated_by' => $t->user->name ?? '-', // opsional
-                    'pic' => $t->gateway->code . ' - ' . $t->gateway->name ?? "-",
-                    'status' => ucfirst($t->status),
-                    'duration' => "-",
-                    'assigned_date' => $t->start_date,
-                    'end_date' => $t->end_date ?? "-",
-                ];
-            });
+    public function list(Request $request)
+{
+    // Ambil per_page dari query (default 10)
+    $perPage = $request->get('per_page', 10);
 
-        return Inertia::render("Ticket/List", [
-            "tickets" => $tickets,
-        ]);
+    // Ambil halaman (default 1)
+    $page = $request->get('page', 1);
+
+    // Optional: filter status
+    $status = $request->get('status', null);
+
+    $query = \App\Models\Ticket::with(['gateway', 'user'])
+        ->orderBy('created_at', 'desc');
+
+    // FILTER STATUS (opsional)
+    if ($status && $status !== 'all') {
+        $query->where('status', $status);
     }
+
+    // === PAGINATION ===
+    $tickets = $query->paginate($perPage)->withQueryString();
+
+    // === MAP RESPONS ===
+    $tickets->getCollection()->transform(function ($t) {
+        return [
+            'ticket_number' => $t->ticket_number,
+            'gateway' => $t->gateway->name ?? '-',
+            'ticket_date' => $t->created_at->format('Y-m-d H:i'),
+            'start_date' => $t->start_date,
+            'category' => $t->category,
+            'subcategory' => $t->sub_category,
+            'flag' => strtoupper($t->flag),
+            'alarm' => $t->alarm,
+            'indication' => $t->indication,
+            'updated_by' => $t->user->name ?? '-',
+            'pic' => ($t->gateway->code ?? '') . ' - ' . ($t->gateway->name ?? "-"),
+            'status' => ucfirst($t->status),
+            'duration' => "-",
+            'assigned_date' => $t->start_date,
+            'end_date' => $t->end_date ?? "-",
+        ];
+    });
+
+    return inertia("Ticket/List", [
+        "tickets" => $tickets,
+    ]);
+}
+
 
     public function edit($ticket_number)
     {

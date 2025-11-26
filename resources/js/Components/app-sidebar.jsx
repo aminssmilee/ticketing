@@ -83,7 +83,6 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       {/* Header */}
-      {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -123,3 +123,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+.shadow-left {
+  box-shadow: -6px 0 8px rgba(0,0,0,0.12);
+}
