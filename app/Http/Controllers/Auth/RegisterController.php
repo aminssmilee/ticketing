@@ -4,23 +4,29 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+
 use App\Models\User;
+use App\Models\EmailOtp;
 use App\Models\Department;
 use App\Models\SubDepartment;
 use App\Models\Gateway;
 use App\Models\Position;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+use App\Mail\SendOtpMail;
+
 use Inertia\Inertia;
 use Exception;
-use Illuminate\Validation\Rule;
 
 class RegisterController extends Controller
 {
     /**
-     * Tampilkan halaman register + data dropdown
+     * Halaman register + dropdown
      */
     public function index()
     {
@@ -33,143 +39,137 @@ class RegisterController extends Controller
     }
 
     /**
-     * Proses register user baru
+     * Proses register dengan OTP
      */
     public function store(Request $request)
     {
         try {
-            // ==========================================
-            // 🔐 RATE LIMITING (Anti Spam Register)
-            // ==========================================
-            $key = 'register:' . $request->ip();
+
+            // ===================================================
+            // ⛔ RATE LIMIT (Anti spam)
+            // ===================================================
+            $key = "register:" . $request->ip();
 
             if (RateLimiter::tooManyAttempts($key, 5)) {
-                $seconds = RateLimiter::availableIn($key);
-
+                $sec = RateLimiter::availableIn($key);
                 return back()->withErrors([
-                    'rate' => "Terlalu banyak percobaan. Coba lagi dalam {$seconds} detik."
-                ])->withInput();
+                    'rate' => "Terlalu banyak permintaan. Coba lagi dalam {$sec} detik."
+                ]);
             }
 
-            RateLimiter::hit($key, 60); // 60 detik
+            RateLimiter::hit($key, 60);
 
-            // ==========================================
+
+            // ===================================================
             // 🧼 SANITASI INPUT
-            // ==========================================
+            // ===================================================
             $request->merge([
                 'name'  => trim(strip_tags($request->name)),
                 'email' => strtolower(trim($request->email)),
             ]);
 
-            // ==========================================
-            // ✅ VALIDASI BACKEND
-            // ==========================================
-            $validator = Validator::make(
-                $request->all(),
-                [
-                    'name'  => ['required', 'string', 'max:255'],
-                    'email' => [
-                        'required',
-                        'email',
-                        'max:255',
-                        'unique:users,email',
-                        // contoh kalau mau wajib email kantor:
-                        // 'regex:/@appcare\.id$/'
-                    ],
 
-                    // Password: min 8, ada huruf besar & angka, konfirmasi sama
-                    'password' => [
-                        'required',
-                        'string',
-                        'min:8',
-                        'regex:/[A-Z]/', // ada huruf besar
-                        'regex:/[0-9]/', // ada angka
-                        'confirmed',
-                    ],
+            // ===================================================
+            // 📌 VALIDASI
+            // ===================================================
+            $validator = Validator::make($request->all(), [
+                'name'  => 'required|string|max:255',
+                'email' => 'required|email|max:255|unique:users,email',
 
-                    // Relasi ID dropdown
-                    'department_id'      => ['required', 'exists:departments,id'],
-                    'sub_department_id'  => ['required', 'exists:sub_departments,id'],
-                    'gateway_id'         => ['required', 'exists:gateways,id'],
-                    'position_id'        => ['required', 'exists:positions,id'],
+                'password' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'regex:/[A-Z]/',
+                    'regex:/[0-9]/',
+                    'confirmed',
                 ],
-                [
-                    // Custom message
-                    'name.required'      => 'Full name wajib diisi.',
-                    'email.required'     => 'Email wajib diisi.',
-                    'email.email'        => 'Format email tidak valid.',
-                    'email.unique'       => 'Email ini sudah terdaftar.',
 
-                    'password.required'  => 'Password wajib diisi.',
-                    'password.min'       => 'Password minimal 8 karakter.',
-                    'password.regex'     => 'Password harus mengandung huruf besar dan angka.',
-                    'password.confirmed' => 'Konfirmasi password tidak cocok.',
+                'department_id'      => 'required|exists:departments,id',
+                'sub_department_id'  => 'required|exists:sub_departments,id',
+                'gateway_id'         => 'required|exists:gateways,id',
+                'position_id'        => 'required|exists:positions,id',
 
-                    'department_id.required'     => 'Department wajib dipilih.',
-                    'department_id.exists'       => 'Department tidak valid.',
-                    'sub_department_id.required' => 'Sub Department wajib dipilih.',
-                    'sub_department_id.exists'   => 'Sub Department tidak valid.',
-                    'gateway_id.required'        => 'Gateway wajib dipilih.',
-                    'gateway_id.exists'          => 'Gateway tidak valid.',
-                    'position_id.required'       => 'Position wajib dipilih.',
-                    'position_id.exists'         => 'Position tidak valid.',
-                ]
-            );
+            ]);
 
             if ($validator->fails()) {
-                // Inertia akan otomatis kirim errors ke FE
                 return back()->withErrors($validator)->withInput();
             }
 
-            // ==========================================
-            // 👀 OPSIONAL: CEK BLACKLIST PASSWORD MUDAH
-            // ==========================================
-            $blacklist = ['password', '12345678', 'qwerty', 'admin123', 'appcare123'];
-            if (in_array(strtolower($request->password), $blacklist)) {
+
+            // ===================================================
+            // ❌ CEK PASSWORD MUDAH
+            // ===================================================
+            $weak = ['password', '12345678', 'qwerty', 'admin123'];
+            if (in_array(strtolower($request->password), $weak)) {
                 return back()->withErrors([
-                    'password' => 'Password terlalu mudah. Gunakan kombinasi yang lebih aman.',
-                ])->withInput();
+                    'password' => 'Password terlalu mudah.'
+                ]);
             }
 
-            // ==========================================
-            // 💾 CREATE USER
-            // ==========================================
+
+            // ===================================================
+            // 🧩 SIMPAN USER (belum aktif)
+            // ===================================================
             $user = User::create([
                 'name'               => $request->name,
                 'email'              => $request->email,
                 'password'           => Hash::make($request->password),
 
-                'department_id'      => (int) $request->department_id,
-                'sub_department_id'  => (int) $request->sub_department_id,
-                'gateway_id'         => (int) $request->gateway_id,
-                'position_id'        => (int) $request->position_id,
+                'department_id'      => $request->department_id,
+                'sub_department_id'  => $request->sub_department_id,
+                'gateway_id'         => $request->gateway_id,
+                'position_id'        => $request->position_id,
 
                 'role'               => 'user',
+                'email_verified_at'  => null,
             ]);
 
-            // ==========================================
-            // 📝 LOGGING (Auditing)
-            // ==========================================
-            Log::info('User registered', [
-                'user_id' => $user->id,
-                'email'   => $user->email,
-                'ip'      => $request->ip(),
+
+            // ===================================================
+            // 🔢 GENERATE OTP
+            // ===================================================
+            $otp = rand(100000, 999999);
+
+            EmailOtp::create([
+                'email'      => $user->email,
+                'otp'        => $otp,
+                'expires_at' => now()->addMinutes(5),
+                'used'       => false,
             ]);
 
+
+            // ===================================================
+            // 📩 KIRIM EMAIL OTP
+            // ===================================================
+            Mail::to($user->email)->send(new SendOtpMail($otp));
+
+
+            // ===================================================
+            // 📝 LOG
+            // ===================================================
+            Log::info("User registered (waiting OTP)", [
+                'email' => $user->email,
+                'ip'    => $request->ip(),
+            ]);
+
+
+            // ===================================================
+            // REDIRECT KE FORM OTP
+            // ===================================================
             return redirect()
-                ->route('auth.login')
-                ->with('success', 'Akun berhasil dibuat! Silakan login.');
+                ->route('auth.verifyOtpForm', ['email' => $user->email])
+                ->with('success', 'OTP telah dikirim ke email Anda.');
 
         } catch (Exception $e) {
 
-            Log::error('Register error', [
-                'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
+            Log::error("Register Error", [
+                'msg' => $e->getMessage(),
             ]);
 
             return back()->withErrors([
-                'server' => 'Server error, silakan coba lagi beberapa saat lagi.'
-            ])->withInput();
+                'server' => 'Terjadi kesalahan server.'
+            ]);
         }
     }
 }

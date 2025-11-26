@@ -4,41 +4,15 @@ import React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
-
-// =========================
-// DUMMY DATA (sementara)
-// =========================
-const total_tickets = 12;
-
-const summaryCategories = [
-  { category: "RF", total: 0 },
-  { category: "Utility", total: 0 },
-  { category: "Ancillary", total: 1 },
-  { category: "Activity", total: 1 },
-  { category: "Antenna Issue", total: 1 },
-  { category: "PM", total: 0 },
-  { category: "CM", total: 1 },
-  { category: "Guest", total: 0 },
-  { category: "Monitoring", total: 1 },
-  { category: "Weather", total: 1 },
-  { category: "ITC Activity", total: 1 },
-  { category: "Panel", total: 1 },
-  { category: "HUB", total: 1 },
-  { category: "Diesel Refill", total: 1 },
-  { category: "Electrical Report", total: 1 },
-];
-
-const matrix = [
-  { category: "RF", GW01: "-", GW02: "-", GW03: "-", GW04: "1", GW05: "-", GW06: "-" },
-  { category: "Utility", GW01: "-", GW02: "-", GW03: "-", GW04: "-", GW05: "-", GW06: "-" },
-  { category: "Ancillary", GW01: "-", GW02: "-", GW03: "1", GW04: "1", GW05: "-", GW06: "-" },
-  { category: "Activity", GW01: "-", GW02: "-", GW03: "1", GW04: "-", GW05: "-", GW06: "-" },
-  { category: "Antenna Issue", GW01: "-", GW02: "-", GW03: "-", GW04: "1", GW05: "-", GW06: "-" },
-  { category: "PM", GW01: "-", GW02: "-", GW03: "1", GW04: "-", GW05: "-", GW06: "-" },
-  { category: "CM", GW01: "-", GW02: "-", GW03: "1", GW04: "-", GW05: "-", GW06: "-" },
-];
+import { usePage } from "@inertiajs/react";
 
 export default function Dashboard() {
+
+  const { total_tickets, summaryCategories, matrix } = usePage().props;
+  const gateways = Array.from(new Set(matrix.flatMap(row => 
+    Object.keys(row).filter(key => key !== 'category')
+  )));
+
   return (
     <SidebarProvider>
       <AppSidebar variant="inset" />
@@ -82,28 +56,28 @@ export default function Dashboard() {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border px-3 py-2">Category</th>
-                  <th className="border px-3 py-2">GW01</th>
-                  <th className="border px-3 py-2">GW02</th>
-                  <th className="border px-3 py-2">GW03</th>
-                  <th className="border px-3 py-2">GW04</th>
-                  <th className="border px-3 py-2">GW05</th>
-                  <th className="border px-3 py-2">GW06</th>
+
+                  {gateways.map(gw => (
+                    <th key={gw} className="border px-3 py-2 text-center">{gw}</th>
+                  ))}
                 </tr>
               </thead>
+
 
               <tbody>
                 {matrix.map((row, i) => (
                   <tr key={i}>
                     <td className="border px-3 py-2 font-medium">{row.category}</td>
-                    <td className="border px-3 py-2 text-center">{row.GW01}</td>
-                    <td className="border px-3 py-2 text-center">{row.GW02}</td>
-                    <td className="border px-3 py-2 text-center">{row.GW03}</td>
-                    <td className="border px-3 py-2 text-center">{row.GW04}</td>
-                    <td className="border px-3 py-2 text-center">{row.GW05}</td>
-                    <td className="border px-3 py-2 text-center">{row.GW06}</td>
+
+                    {gateways.map(gw => (
+                      <td key={gw} className="border px-3 py-2 text-center">
+                        {row[gw]}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
         </div>

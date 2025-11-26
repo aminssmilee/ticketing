@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Ticket;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\WorkInstruction;
+use App\Http\Controllers\Controller;
 
 class WorkInstructionController extends Controller
 {

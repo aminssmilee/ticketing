@@ -1,81 +1,109 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm } from "@inertiajs/react"
-import { Eye, EyeOff } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { useEffect, useState } from "react";
+import { useForm, usePage } from "@inertiajs/react";
+import { Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
-export function LoginForm({ className, ...props }) {
-  const { data, setData, post, processing, errors } = useForm({
+export default function LoginForm({ className, ...props }) {
+  const { recaptcha_site_key, errors } = usePage().props;
+
+  const { data, setData, post, processing } = useForm({
     email: "",
     password: "",
-  })
+    "g-recaptcha-response": "",
+  });
 
-  const [showPassword, setShowPassword] = useState(false)
-  const [localErrors, setLocalErrors] = useState({})
+  const [showPassword, setShowPassword] = useState(false);
+  const [localErrors, setLocalErrors] = useState({});
 
-  // ==========================
-  // FRONTEND VALIDATION
-  // ==========================
+  // ======================================
+  //  LOAD RECAPTCHA (Explicit Render)
+  // ======================================
+  useEffect(() => {
+    window.onloadCallback = function () {
+      const box = document.getElementById("recaptcha-box");
+      if (box && window.grecaptcha) {
+        window.grecaptcha.render("recaptcha-box", {
+          sitekey: recaptcha_site_key,
+          callback: (token) => {
+            setData("g-recaptcha-response", token);
+          },
+        });
+      }
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      "https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  // ======================================
+  //  VALIDATION FE
+  // ======================================
   const validate = () => {
-    const newErrors = {}
+    const newErrors = {};
 
     if (!data.email.trim()) {
-      newErrors.email = "Email is required"
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      newErrors.email = "Invalid email format"
+      newErrors.email = "Invalid email format";
     }
 
-    if (!data.password) newErrors.password = "Password is required"
+    if (!data.password.trim()) {
+      newErrors.password = "Password is required";
+    }
 
-    setLocalErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    if (!data["g-recaptcha-response"]) {
+      newErrors.captcha = "Please complete the CAPTCHA";
+    }
 
-  // ==========================
-  // SUBMIT
-  // ==========================
+    setLocalErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // ======================================
+  //  SUBMIT LOGIN
+  // ======================================
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validate()) {
-      toast.error("Please check the form again")
-      return
+      toast.error("Please check the form again");
+      return;
     }
 
     post("/login", {
       preserveScroll: true,
 
+      onError: () => {
+        toast.error("Login failed");
+        if (typeof grecaptcha !== "undefined") grecaptcha.reset();
+      },
+
       onSuccess: () => {
-        toast.success("Berhasil login")
+        toast.success("Login successful");
+        setLocalErrors({});
+        if (typeof grecaptcha !== "undefined") grecaptcha.reset();
       },
+    });
+  };
 
-      onError: (err) => {
-        // Handle error spesifik
-        if (errors.rate) {
-          toast.error(errors.rate)
-        } else if (errors.email || errors.password) {
-          toast.error("Email atau password salah")
-        } else {
-          toast.error("Gagal login. Coba lagi.")
-        }
-      },
-    })
-  }
+  const getError = (field) => localErrors[field] || errors[field];
 
-  // Merge FE + BE errors
-  const getError = (field) => localErrors[field] || errors[field]
-
+  // ======================================
+  //  UI
+  // ======================================
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: `url('/images/login-bg.`,
-      }}
+      style={{ backgroundImage: "url('/images/login-bg.png')" }}
     >
       <div
         className={cn(
@@ -84,8 +112,6 @@ export function LoginForm({ className, ...props }) {
         )}
         {...props}
       >
-
-        {/* GLOBAL ERROR SERVER / RATE LIMIT */}
         {(errors.server || errors.rate) && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-2 rounded text-sm">
             {errors.server || errors.rate}
@@ -93,23 +119,21 @@ export function LoginForm({ className, ...props }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Header */}
-          <div className="flex flex-col items-center gap-1">
-            <h1 className="text-lg sm:text-xl font-bold text-[#0A1A2F]">
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-[#0A1A2F]">
               Welcome to Ticketing System
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Please login to continue
             </p>
           </div>
 
-          {/* Email */}
+          {/* EMAIL */}
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label>Email</Label>
             <Input
-              id="email"
               type="email"
-              placeholder="admin@appcare.id"
+              placeholder="your.email@example.com"
               value={data.email}
               onChange={(e) => setData("email", e.target.value)}
               disabled={processing}
@@ -119,12 +143,11 @@ export function LoginForm({ className, ...props }) {
             )}
           </div>
 
-          {/* Password */}
+          {/* PASSWORD */}
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label>Password</Label>
             <div className="relative">
               <Input
-                id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={data.password}
@@ -134,13 +157,9 @@ export function LoginForm({ className, ...props }) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-2.5 text-gray-500"
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
             {getError("password") && (
@@ -148,77 +167,33 @@ export function LoginForm({ className, ...props }) {
             )}
           </div>
 
-          {/* Forgot Password Link */}
-          <div className="text-right -mt-2">
-            <a
-              href="/forgot-password"
-              className="text-xs sm:text-sm text-primary underline hover:text-primary/80"
-            >
-              Forgot your password?
+          <div className="text-right">
+            <a href="/forgot-password" className="text-sm text-primary underline">
+              Forgot Password?
             </a>
           </div>
 
-          {/* Login button */}
-          <Button
-            type="submit"
-            className="w-full h-11 text-sm sm:text-base"
-            disabled={processing}
-          >
-            {processing ? "Memproses..." : "Login"}
+          {/* CAPTCHA */}
+          <div className="mt-4">
+            <div id="recaptcha-box"></div>
+
+            {getError("captcha") && (
+              <p className="text-sm text-red-500 mt-1">{getError("captcha")}</p>
+            )}
+          </div>
+
+          <Button type="submit" className="w-full h-11" disabled={processing}>
+            {processing ? "Processing..." : "Login"}
           </Button>
 
-          {/* Separator */}
-          <div className="relative text-center text-xs sm:text-sm mt-4 after:absolute after:inset-0 after:top-1/2 after:flex after:items-center after:border-t after:border-border">
-            <span className="relative z-10 bg-background px-2 text-muted-foreground">
-              Or
-            </span>
-          </div>
-
-          {/* Social login buttons (belum aktif tapi tampil) */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Button variant="outline" className="w-full">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path
-                  d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                  fill="currentColor"
-                />
-              </svg>
-              Continue with Apple
-            </Button>
-
-            <Button variant="outline" className="w-full">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path
-                  d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                  fill="currentColor"
-                />
-              </svg>
-              Continue with Google
-            </Button>
-          </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Don’t have an account?{" "}
+            <a href="/register" className="text-primary underline">
+              Register now
+            </a>
+          </p>
         </form>
-
-        {/* Register Link */}
-        <div className="text-center text-xs sm:text-sm text-muted-foreground mt-2">
-          Dont have an account?{" "}
-          <a href="/register" className="font-medium text-primary hover:underline">
-            Register now
-          </a>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-[10px] sm:text-xs text-muted-foreground mt-3 leading-relaxed">
-          By clicking continue, you agree to our{" "}
-          <a href="#" className="underline">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="#" className="underline">
-            Privacy Policy
-          </a>
-          .
-        </div>
       </div>
     </div>
-  )
+  );
 }

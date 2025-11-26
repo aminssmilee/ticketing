@@ -2,7 +2,7 @@
 
 import bglogo from "/public/img/login.jpg"
 import logo from "/public/img/psn.jpg"   // ⬅️ tambahkan logo kamu
-import { LoginForm } from "@/components/login-form"
+import  LoginForm  from "@/components/login-form"
 
 export default function LoginPage() {
   return (
