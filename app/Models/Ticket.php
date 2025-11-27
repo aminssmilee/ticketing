@@ -13,11 +13,20 @@ class Ticket extends Model
 
     protected $fillable = [
         'ticket_number',
-        'user_id',         // <= WAJIB
+        'user_id',
         'gateway_id',
         'start_date',
-        'category',
-        'sub_category',
+
+        // FIELD BARU BERBASIS ID
+        'category_id',
+        'sub_category_id',
+
+        // BACKUP STRING (lama)
+        // 'category',
+        // 'sub_category',
+        // 'old_category',
+        // 'old_subcategory',
+
         'serial_number',
         'flag',
         'alarm',
@@ -28,6 +37,7 @@ class Ticket extends Model
         'created_by',
         'updated_by',
     ];
+
 
 
     /*
@@ -72,5 +82,15 @@ class Ticket extends Model
     public function updates()
     {
         return $this->hasMany(TicketUpdate::class);
+    }
+
+    public function categoryRef()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function subCategoryRef()
+    {
+        return $this->belongsTo(SubCategory::class, 'sub_category_id');
     }
 }

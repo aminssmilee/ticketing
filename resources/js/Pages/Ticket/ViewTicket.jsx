@@ -23,7 +23,13 @@ export default function ViewTicket() {
 
           {/* ====================== TICKET INFORMATION ====================== */}
           <div className="border rounded-md bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 border-b pb-2">Ticket Information</h2>
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+              <h2 className="text-lg font-semibold">Ticket Information</h2>
+
+              {/* STATUS BADGE */}
+              {/* <StatusBadge status={ticket.status} /> */}
+            </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <p><strong>Ticket Number:</strong> {ticket.ticket_number}</p>
@@ -57,7 +63,7 @@ export default function ViewTicket() {
             )}
 
             {updates.map((u, index) => (
-              <div 
+              <div
                 key={index}
                 className="border rounded-md bg-blue-50 p-4 text-sm"
               >

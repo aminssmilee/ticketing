@@ -16,6 +16,10 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Ticket\DashboardController;
 use App\Http\Controllers\Ticket\WorkInstructionController;
 
+// CATEGORY CONTROLLER
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\SubCategoryController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -83,6 +87,10 @@ Route::prefix('ticket')
             ->where('ticket_number', '[A-Za-z0-9\-_]+')
             ->name('view');
 
+        Route::post('/ticket/{ticket_number}/close', [TicketController::class, 'close'])
+            ->name('ticket.close');
+
+
         /*
         |--------------------------------------------------------------------------
         | ADMIN ONLY
@@ -92,6 +100,22 @@ Route::prefix('ticket')
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::post('/users/update-role', [UserController::class, 'updateRole'])->name('users.updateRole');
             Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+
+            // ===========================
+            // CATEGORY MANAGEMENT
+            // ===========================
+            // Category
+
+            Route::get('/categories', [CategoryController::class, 'index'])->name('admin.categories.index');
+            Route::post('/categories', [CategoryController::class, 'store'])->name('admin.categories.store');
+            Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('admin.categories.destroy');
+
+
+            // ===========================
+            // SUB CATEGORY MANAGEMENT
+            // ===========================
+            // Sub Category
+            Route::post('/categories/{id}/sub', [SubCategoryController::class, 'store'])->name('admin.subcategories.store');
+            Route::delete('/subcategories/{id}', [SubCategoryController::class, 'destroy'])->name('admin.subcategories.destroy');
         });
     });
-    

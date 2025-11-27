@@ -206,6 +206,7 @@ export default function WorkInstruction() {
                   <th className="p-2 border">Category</th>
                   <th className="p-2 border">Sub</th>
                   <th className="p-2 border">Description</th>
+                  <th className="p-2 border">Taks</th>
                   <th className="p-2 border">Document</th>
                 </tr>
               </thead>
@@ -217,6 +218,7 @@ export default function WorkInstruction() {
                     <td className="p-2 border">{item.category}</td>
                     <td className="p-2 border">{item.sub_category}</td>
                     <td className="p-2 border">{item.description}</td>
+                    <td className="p-2 border">{item.tags}</td>
                     <td className="p-2 border text-center">
                       <a
                         href={`/storage/${item.file_path}`}

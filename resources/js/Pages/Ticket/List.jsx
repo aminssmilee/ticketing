@@ -16,8 +16,18 @@ import {
 
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
+
 
 export default function List() {
+
+    const [selectedRow, setSelectedRow] = useState(null)
 
     const { tickets } = usePage().props
     const [status, setStatus] = useState("all")
@@ -28,28 +38,76 @@ export default function List() {
         return tickets.data.filter((t) => t.status.toLowerCase() === status)
     }, [status, tickets.data])
 
-    // === PAGINATION PROPS ===
+    // === PAGINATION ===
     const pagination = {
         page: tickets.current_page,
         totalPages: tickets.last_page,
         pageSize: tickets.per_page,
 
-        onPageChange: (page) => {
-            router.visit(route("ticket.list", { page, per_page: pagination.pageSize }))
-        },
+        onPageChange: (page) =>
+            router.visit(route("ticket.list", { page, per_page: pagination.pageSize })),
 
-        onPageSizeChange: (size) => {
-            router.visit(route("ticket.list", { per_page: size, page: 1 }))
-        },
+        onPageSizeChange: (size) =>
+            router.visit(route("ticket.list", { per_page: size, page: 1 })),
     }
+
+    // Kolom action-only untuk tabel kanan
+    const actionOnlyColumn = [
+        {
+            header: "Action",
+            id: "action_only",
+            cell: ({ row }) => {
+                const ticket = row.original
+
+                const isClosed = ticket.status?.toLowerCase() === "closed"
+
+                return (
+                    <div className="flex">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-5 w-5 p-2">
+                                    <MoreHorizontal />
+                                </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="center">
+
+                                {/* VIEW TICKET SELALU ADA */}
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        window.location.href = route("ticket.view", ticket.ticket_number)
+                                    }
+                                >
+                                    View Ticket
+                                </DropdownMenuItem>
+
+                                {/* UPDATE TICKET — hanya muncul jika status bukan closed */}
+                                {!isClosed && (
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            router.visit(
+                                                route("ticket.update", { ticket_number: ticket.ticket_number })
+                                            )
+                                        }
+                                    >
+                                        Update Ticket
+                                    </DropdownMenuItem>
+                                )}
+
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )
+            }
+        }
+    ]
+
 
     return (
         <SidebarProvider>
             <AppSidebar variant="inset" />
 
             <SidebarInset className="overflow-x-hidden">
-
-                {/* HEADER */}
                 <SiteHeader
                     title="List Ticket"
                     description="Daftar tiket yang Anda buat."
@@ -59,7 +117,7 @@ export default function List() {
 
                     <div className="border border-foreground/10 rounded-lg shadow-sm bg-white p-4">
 
-                        {/* === CUSTOM PAGE HEADER === */}
+                        {/* Header */}
                         <div className="px-2 mb-6">
                             <h1 className="text-xl font-semibold">Your Ticket Records</h1>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -72,9 +130,8 @@ export default function List() {
                             </p>
                         </div>
 
-                        {/* === FILTER === */}
+                        {/* Filter */}
                         <div className="mb-4 flex justify-end items-center gap-4 px-2">
-
                             <Label className="text-sm">Filter by status</Label>
 
                             <Select value={status} onValueChange={setStatus}>
@@ -86,20 +143,51 @@ export default function List() {
                                     <SelectItem value="all">All</SelectItem>
                                     <SelectItem value="open">Open</SelectItem>
                                     <SelectItem value="update">On Progress</SelectItem>
-                                    <SelectItem value="done">Done</SelectItem>
+                                    <SelectItem value="closed">Done</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* === TABLE === */}
-                        <div className="w-full overflow-x-auto">
-                            <div className="min-w-[1800px]">
+                        {/* === TABLES SIDE BY SIDE === */}
+                        <div className="flex flex-row w-full gap-2">
+
+                            {/* === TABLE WRAPPER (Desktop) === */}
+                            <div className="hidden md:flex w-full border border-gray-200 rounded-lg overflow-hidden">
+
+                                {/* LEFT TABLE (Scrollable) */}
+                                <div className="flex-1 overflow-x-auto">
+                                    <div className="min-w-[1800px]">
+                                        <TicketTable
+                                            columns={ticketColumns}
+                                            data={filteredData}
+                                            pagination={pagination}
+                                            onRowSelect={setSelectedRow}
+                                            selectedRow={selectedRow}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* RIGHT TABLE (Action Only - Fixed) */}
+                                <div className="w-[130px] border-gray-200">
+                                    <div className="min-w-[130px]">
+                                        <TicketTable
+                                            columns={actionOnlyColumn}
+                                            data={filteredData}
+                                        />
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* === MOBILE VIEW (Single table with action inside row) === */}
+                            <div className="w-full md:hidden">
                                 <TicketTable
-                                    columns={ticketColumns}
+                                    columns={[...ticketColumns, ...actionOnlyColumn]}
                                     data={filteredData}
                                     pagination={pagination}
                                 />
                             </div>
+
                         </div>
 
                         {/* === PAGINATION === */}
@@ -174,8 +262,11 @@ export default function List() {
                                     >
                                         »
                                     </Button>
+
                                 </div>
+
                             </div>
+
                         </div>
 
                     </div>

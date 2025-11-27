@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from "react"
+import React from "react"
 
 import {
   Table,
@@ -10,42 +10,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+
 import { ArrowUpRight } from "lucide-react"
 
-export function TicketTable({ columns = [], data = [] }) {
-
-  const scrollRef = useRef(null)
-  const [isSticky, setIsSticky] = useState(false)
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-
-    const handleScroll = () => {
-      setIsSticky(el.scrollLeft > 0)
-    }
-
-    el.addEventListener("scroll", handleScroll)
-    return () => el.removeEventListener("scroll", handleScroll)
-  }, [])
-
+export function TicketTable({ columns = [], data = [], onRowSelect, selectedRow }) {
   return (
-    <div
-      ref={scrollRef}
-      className="w-full overflow-x-auto overflow-y-visible relative border rounded-md p-2"
-    >
-      <Table className="min-w-[1700px]">
+    <div className="w-full overflow-x-auto border rounded-md p-2 relative">
+
+      <Table className="min-w-max border-separate border-spacing-0">
 
         {/* HEADER */}
-        <TableHeader className="sticky top-0 z-30">
-          <TableRow>
+        <TableHeader className="bg-white sticky top-0 z-30">
+          <TableRow className="bg-white">
             {columns.map((col) => (
               <TableHead
                 key={col.accessorKey ?? col.id}
-                className={`
-                  text-xs
-                  ${col.meta?.sticky && isSticky ? "sticky right-0 bg-white shadow-left z-40" : ""}
-                `}
+                className="text-xs whitespace-nowrap px-4 py-2 border-b bg-white"
               >
                 {col.header}
               </TableHead>
@@ -53,36 +33,63 @@ export function TicketTable({ columns = [], data = [] }) {
           </TableRow>
         </TableHeader>
 
+        {/* BODY */}
         <TableBody>
           {data.map((row) => (
-            <TableRow key={row.ticket_number}>
+            <TableRow
+              key={row.ticket_number}
+              className={`relative cursor-pointer 
+                ${selectedRow?.ticket_number === row.ticket_number ? "bg-blue-50" : ""}
+              `}
+              onClick={() => onRowSelect && onRowSelect(row)}
+            >
+
               {columns.map((col) => {
+                const value = row[col.accessorKey]
+                const uniqueKey = `${row.ticket_number}-${col.accessorKey || col.id}`
 
-                const val = row[col.accessorKey]
+                // ===== ACTION COLUMN =====
+                if (col.id === "actions") {
+                  return (
+                    <TableCell
+                      key={uniqueKey}
+                      className="text-xs px-2 py-2 border-b whitespace-nowrap md:w-[80px] w-[20px] text-center"
+                    >
+                      <div className="flex items-center justify-center w-full">
+                        {col.cell({
+                          row: {
+                            original: row,
+                            getValue: (key) => row[key],
+                          },
+                        })}
+                      </div>
+                    </TableCell>
+                  )
+                }
 
-                const stickyClass = col.meta?.sticky
-                  ? "sticky right-0 bg-white z-30 shadow-left"
-                  : ""
-
+                // ===== CLICKABLE TICKET NUMBER =====
                 if (col.accessorKey === "ticket_number") {
                   return (
                     <TableCell
-                      key={col.accessorKey}
-                      className={`text-xs cursor-pointer text-blue-600 whitespace-nowrap flex items-center gap-1 ${stickyClass}`}
-                      onClick={() => (window.location.href = `/ticket/view/${val}`)}
+                      key={uniqueKey}
+                      className="text-xs px-4 py-2 border-b whitespace-nowrap cursor-pointer text-blue-600 flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.location.href = `/ticket/view/${value}`
+                      }}
                     >
-                      <span className="underline">{val}</span>
+                      <span className="underline">{value}</span>
                       <ArrowUpRight className="w-3 h-3" />
                     </TableCell>
                   )
                 }
 
-
+                // ===== CUSTOM CELL =====
                 if (col.cell) {
                   return (
                     <TableCell
-                      key={col.accessorKey}
-                      className={`text-xs ${stickyClass}`}
+                      key={uniqueKey}
+                      className="text-xs px-4 py-2 border-b whitespace-nowrap"
                     >
                       {col.cell({
                         row: {
@@ -94,15 +101,17 @@ export function TicketTable({ columns = [], data = [] }) {
                   )
                 }
 
+                // ===== DEFAULT CELL =====
                 return (
                   <TableCell
-                    key={col.accessorKey}
-                    className={`text-xs ${stickyClass}`}
+                    key={uniqueKey}
+                    className="text-xs px-4 py-2 border-b whitespace-nowrap"
                   >
-                    {val}
+                    {value}
                   </TableCell>
                 )
               })}
+
             </TableRow>
           ))}
         </TableBody>
