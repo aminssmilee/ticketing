@@ -5,6 +5,11 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { usePage } from "@inertiajs/react";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
+import { router } from "@inertiajs/react";
+import StatusBadge from "@/components/status-badge";
+import { toast } from "sonner";
 
 export default function ViewTicket() {
   const { ticket, updates } = usePage().props;
@@ -26,10 +31,33 @@ export default function ViewTicket() {
             <div className="flex items-center justify-between mb-4 border-b pb-2">
               <h2 className="text-lg font-semibold">Ticket Information</h2>
 
-              {/* STATUS BADGE */}
-              {/* <StatusBadge status={ticket.status} /> */}
-            </div>
+              <div className="flex items-center gap-3">
 
+                {/* BUTTON UPDATE (sembunyikan jika status = close) */}
+                {ticket.status && !ticket.status.toLowerCase().startsWith("close") ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      router.visit(
+                        route("ticket.update", {
+                          ticket_number: ticket.ticket_number,
+                        })
+                      )
+                    }
+                    className="flex items-center gap-1"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Update Ticket
+                  </Button>
+                ) : (
+                  <span className="text-xs text-red-500 italic">
+                    Ticket sudah ditutup – update tidak tersedia
+                  </span>
+                )}
+
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <p><strong>Ticket Number:</strong> {ticket.ticket_number}</p>
