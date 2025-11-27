@@ -92,7 +92,6 @@ export default function ViewTicket() {
 
             {updates.map((u, index) => (
               <div
-              <div
                 key={index}
                 className="border rounded-md bg-blue-50 p-4 text-sm"
               >
