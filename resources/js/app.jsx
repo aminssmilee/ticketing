@@ -1,21 +1,31 @@
-    import './bootstrap';
-    import '../css/app.css';
+import './bootstrap';
+import '../css/app.css';
 
-    import { createRoot } from 'react-dom/client';
-    import { createInertiaApp } from '@inertiajs/react';
-    import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { createRoot } from 'react-dom/client';
+import { createInertiaApp } from '@inertiajs/react';
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 
-    const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// IMPORT TOASTER
+import { Toaster } from "sonner";
 
-    createInertiaApp({
-        title: (title) => `${title} - ${appName}`,
-        resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
-        setup({ el, App, props }) {
-            const root = createRoot(el);
+const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-            root.render(<App {...props} />);
-        },
-        progress: {
-            color: '#4B5563',
-        },
-    });
+createInertiaApp({
+    title: (title) => `${title} - ${appName}`,
+    resolve: (name) =>
+        resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
+    setup({ el, App, props }) {
+        const root = createRoot(el);
+
+        root.render(
+            <>
+                {/* 🔥 Toaster WAJIB ADA DI SINI */}
+                <Toaster richColors position="top-center" />
+                <App {...props} />
+            </>
+        );
+    },
+    progress: {
+        color: '#4B5563',
+    },
+});

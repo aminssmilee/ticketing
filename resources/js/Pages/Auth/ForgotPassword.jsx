@@ -1,50 +1,133 @@
-import GuestLayout from '@/Layouts/GuestLayout';
-import InputError from '@/Components/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import { Head, useForm } from '@inertiajs/react';
+"use client";
 
-export default function ForgotPassword({ status }) {
+import { useState } from "react";
+import { useForm } from "@inertiajs/react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+import logo from "/public/img/psn.jpg";
+
+export default function ForgotPassword() {
     const { data, setData, post, processing, errors } = useForm({
-        email: '',
+        email: "",
     });
 
+    const [localErrors, setLocalErrors] = useState({});
+
+    // ==============================
+    // FRONTEND VALIDATION
+    // ==============================
+    const validate = () => {
+        const newErrors = {};
+
+        if (!data.email.trim()) {
+            newErrors.email = "Email is required";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+            newErrors.email = "Invalid email format";
+        }
+
+        setLocalErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // ==============================
+    // SUBMIT
+    // ==============================
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('password.email'));
+        if (!validate()) {
+            toast.error("Please check your inputs");
+            return;
+        }
+
+        post("/forgot-password", {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success("Email reset password berhasil dikirim");
+                setData("email", "")
+            },
+
+            onError: (err) => {
+
+                if (errors.email) {
+                    toast.error(errors.email)   // Email tidak terdaftar
+                }
+                else if (errors.server) {
+                    toast.error("Gagal mengirim email. Coba lagi nanti")
+                }
+                else {
+                    toast.error("Terjadi kesalahan, coba lagi nanti")
+                }
+
+            },
+        })
+
     };
 
-    return (
-        <GuestLayout>
-            <Head title="Forgot Password" />
+    const getError = (field) => localErrors[field] || errors[field];
 
-            <div className="mb-4 text-sm text-gray-600">
-                Forgot your password? No problem. Just let us know your email address and we will email you a password
-                reset link that will allow you to choose a new one.
+    return (
+        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+
+            {/* ================= LEFT IMAGE (DESKTOP) ================= */}
+            <div className="hidden lg:block bg-gray-100">
+                <img
+                    src={logo}
+                    alt="Forgot Password"
+                    className="w-full h-full object-cover"
+                />
             </div>
 
-            {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
+            {/* ================= RIGHT FORM ================= */}
+            <div className="flex md:items-center justify-center p-6 sm:p-12">
+                <div className="max-w-md w-full space-y-5">
 
-            <form onSubmit={submit}>
-                <TextInput
-                    id="email"
-                    type="email"
-                    name="email"
-                    value={data.email}
-                    className="mt-1 block w-full"
-                    isFocused={true}
-                    onChange={(e) => setData('email', e.target.value)}
-                />
+                    {/* TITLE */}
+                    <h1 className="text-3xl font-bold text-center">
+                        Forgot Password
+                    </h1>
 
-                <InputError message={errors.email} className="mt-2" />
+                    <p className="text-sm text-muted-foreground text-center">
+                        Enter your email and we’ll send you a link to reset your password.
+                    </p>
 
-                <div className="flex items-center justify-end mt-4">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Email Password Reset Link
-                    </PrimaryButton>
+                    {/* FORM TANPA BORDER / SHADOW */}
+                    <form onSubmit={submit} className="space-y-4">
+
+                        {/* EMAIL */}
+                        <div className="grid gap-2">
+                            <Label>Email</Label>
+                            <Input
+                                type="email"
+                                value={data.email}
+                                onChange={(e) => setData("email", e.target.value)}
+                                placeholder="your@email.com"
+                                disabled={processing}
+                                className={`${getError("email") ? "border-red-500" : ""}`}
+                            />
+                            {getError("email") && (
+                                <p className="text-red-500 text-sm">{getError("email")}</p>
+                            )}
+                        </div>
+
+                        {/* BUTTON */}
+                        <Button className="w-full h-11 text-sm" disabled={processing}>
+                            {processing ? "Sending..." : "Send Reset Link"}
+                        </Button>
+
+                    </form>
+
+                    {/* Back to login */}
+                    <p className="text-center text-sm text-muted-foreground">
+                        Remember your password?{" "}
+                        <a href="/" className="text-primary underline">Login</a>
+                    </p>
                 </div>
-            </form>
-        </GuestLayout>
+            </div>
+        </div>
     );
 }

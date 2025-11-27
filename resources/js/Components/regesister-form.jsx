@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,26 +17,97 @@ import {
 import { toast } from "sonner";
 
 export function RegisterForm({ className, ...props }) {
+  const { departments, sub_departments, gateways, positions } = usePage().props;
+
   const { data, setData, post, processing, errors } = useForm({
     name: "",
     email: "",
-    department: "",
-    sub_department: "",
-    location: "",
-    position: "",
+    department_id: "",
+    sub_department_id: "",
+    gateway_id: "",
+    position_id: "",
     password: "",
     password_confirmation: "",
   });
 
+  const [localErrors, setLocalErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
 
+  // ===========================
+  // FRONTEND VALIDATION
+  // ===========================
+  const validate = () => {
+    const newErrors = {};
+
+    // Name
+    if (!data.name.trim()) newErrors.name = "Full name is required";
+
+    // Email
+    if (!data.email.trim())
+      newErrors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
+      newErrors.email = "Invalid email format";
+
+    // Dropdowns
+    if (!data.department_id) newErrors.department_id = "Department is required";
+    if (!data.sub_department_id)
+      newErrors.sub_department_id = "Sub Department is required";
+    if (!data.gateway_id) newErrors.gateway_id = "Gateway is required";
+    if (!data.position_id) newErrors.position_id = "Position is required";
+
+    // Password
+    if (!data.password)
+      newErrors.password = "Password is required";
+    else if (data.password.length < 8)
+      newErrors.password = "Password must be at least 8 characters";
+    else if (!/[A-Z]/.test(data.password))
+      newErrors.password =
+        "Password must contain at least 1 uppercase letter (A-Z)";
+    else if (!/[0-9]/.test(data.password))
+      newErrors.password =
+        "Password must contain at least 1 number (0-9)";
+
+    // Confirm Password
+    if (!data.password_confirmation)
+      newErrors.password_confirmation = "Please confirm your password";
+    else if (data.password !== data.password_confirmation)
+      newErrors.password_confirmation = "Password confirmation does not match";
+
+    setLocalErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // ===========================
+  // SUBMIT FORM
+  // ===========================
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!validate()) {
+      toast.error("Please check the form again");
+      return;
+    }
+
     post("/register", {
-      onSuccess: () => toast.success("Register berhasil 🎉"),
-      onError: () => toast.error("Gagal mendaftar ❌"),
+      preserveScroll: true,
+      onError: () => {
+        toast.error("Registration failed");
+      },
+      onSuccess: () => {
+        toast.success("Registration successful");
+      },
     });
+  };
+
+  // ===========================
+  // MERGE LOCAL ERROR + BACKEND ERROR
+  // ===========================
+  const getError = (field) => {
+    if (localErrors[field]) return localErrors[field];
+    if (errors[field]) return errors[field];
+    return null;
   };
 
   return (
@@ -47,7 +118,6 @@ export function RegisterForm({ className, ...props }) {
       )}
       {...props}
     >
-      {/* Header */}
       <div className="text-center mb-2">
         <h1 className="text-xl sm:text-2xl font-bold text-[#0A1A2F]">
           Create Account
@@ -57,103 +127,142 @@ export function RegisterForm({ className, ...props }) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Global error (server / rate limit) */}
+      {(errors.server || errors.rate) && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2">
+          {errors.server || errors.rate}
+        </div>
+      )}
 
-        {/* Full Name */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* NAME */}
         <div className="grid gap-2">
           <Label>Full Name</Label>
           <Input
-            placeholder="Salis Ahmad"
+            placeholder="Your full name"
             value={data.name}
+            disabled={processing}
             onChange={(e) => setData("name", e.target.value)}
           />
-          {errors.name && (
-            <p className="text-red-500 text-sm">{errors.name}</p>
+          {getError("name") && (
+            <p className="text-red-500 text-sm">{getError("name")}</p>
           )}
         </div>
 
-        {/* Email */}
+        {/* EMAIL */}
         <div className="grid gap-2">
           <Label>Email</Label>
           <Input
             type="email"
-            placeholder="user@appcare.id"
+            placeholder="Your email address"
             value={data.email}
+            disabled={processing}
             onChange={(e) => setData("email", e.target.value)}
           />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email}</p>
+          {getError("email") && (
+            <p className="text-red-500 text-sm">{getError("email")}</p>
           )}
         </div>
 
-        {/* Department */}
+        {/* DEPARTMENT */}
         <div className="grid gap-2">
           <Label>Department</Label>
-          <Select onValueChange={(v) => setData("department", v)}>
+          <Select
+            value={data.department_id}
+            onValueChange={(v) => setData("department_id", v)}
+            disabled={processing}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Choose Department" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="GAR Site Management">GAR Site Management</SelectItem>
-              <SelectItem value="GAR UOM">GAR UOM</SelectItem>
-              <SelectItem value="SNT">SNT</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {getError("department_id") && (
+            <p className="text-red-500 text-sm">{getError("department_id")}</p>
+          )}
         </div>
 
-        {/* Sub Department */}
+        {/* SUB DEPARTMENT */}
         <div className="grid gap-2">
           <Label>Sub Department</Label>
-          <Select onValueChange={(v) => setData("sub_department", v)}>
+          <Select
+            value={data.sub_department_id}
+            onValueChange={(v) => setData("sub_department_id", v)}
+            disabled={processing}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Choose Sub Department" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="GSM">GSM</SelectItem>
-              <SelectItem value="Site Support">Site Support</SelectItem>
+              {sub_departments.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>
+                  {s.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {getError("sub_department_id") && (
+            <p className="text-red-500 text-sm">
+              {getError("sub_department_id")}
+            </p>
+          )}
         </div>
 
-        {/* Location */}
+        {/* GATEWAY */}
         <div className="grid gap-2">
-          <Label>Location / Gateway</Label>
-          <Select onValueChange={(v) => setData("location", v)}>
+          <Label>Gateway</Label>
+          <Select
+            value={data.gateway_id}
+            onValueChange={(v) => setData("gateway_id", v)}
+            disabled={processing}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select Gateway" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="GW01 - Batam">GW 01 Batam</SelectItem>
-              <SelectItem value="GW02 - Cikarang">GW 02 Cikarang</SelectItem>
-              <SelectItem value="GW03 - Pontianak">GW 03 Pontianak</SelectItem>
-              <SelectItem value="GW04 - Banjarmasin">GW 04 Banjarmasin</SelectItem>
-              <SelectItem value="GW05 - Tarakan">GW 05 Tarakan</SelectItem>
-              <SelectItem value="GW06 - Manado">GW 06 Manado</SelectItem>
-              <SelectItem value="GW07 - Kupang">GW 07 Kupang</SelectItem>
-              <SelectItem value="GW08 - Ambon">GW 08 Ambon</SelectItem>
-              <SelectItem value="GW09 - Manokwari">GW 09 Manokwari</SelectItem>
-              <SelectItem value="GW10 - Timika">GW 10 Timika</SelectItem>
-              <SelectItem value="GW11 - Jayapura">GW 11 Jayapura</SelectItem>
+              {gateways.map((g) => (
+                <SelectItem key={g.id} value={String(g.id)}>
+                  {g.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {getError("gateway_id") && (
+            <p className="text-red-500 text-sm">{getError("gateway_id")}</p>
+          )}
         </div>
 
-        {/* Position */}
+        {/* POSITION */}
         <div className="grid gap-2">
           <Label>Position</Label>
-          <Select onValueChange={(v) => setData("position", v)}>
+          <Select
+            value={data.position_id}
+            onValueChange={(v) => setData("position_id", v)}
+            disabled={processing}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select Position" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Staff">Staff</SelectItem>
-              <SelectItem value="Asst Manager">Asst Manager</SelectItem>
-              <SelectItem value="Manager">Manager</SelectItem>
+              {positions.map((p) => (
+                <SelectItem key={p.id} value={String(p.id)}>
+                  {p.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {getError("position_id") && (
+            <p className="text-red-500 text-sm">{getError("position_id")}</p>
+          )}
         </div>
 
-        {/* Password */}
+        {/* PASSWORD */}
         <div className="grid gap-2">
           <Label>Password</Label>
           <div className="relative">
@@ -161,6 +270,7 @@ export function RegisterForm({ className, ...props }) {
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={data.password}
+              disabled={processing}
               onChange={(e) => setData("password", e.target.value)}
             />
             <button
@@ -171,9 +281,12 @@ export function RegisterForm({ className, ...props }) {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {getError("password") && (
+            <p className="text-red-500 text-sm">{getError("password")}</p>
+          )}
         </div>
 
-        {/* Confirm Password */}
+        {/* CONFIRM PASSWORD */}
         <div className="grid gap-2">
           <Label>Re-type Password</Label>
           <div className="relative">
@@ -181,7 +294,10 @@ export function RegisterForm({ className, ...props }) {
               type={showPassword2 ? "text" : "password"}
               placeholder="••••••••"
               value={data.password_confirmation}
-              onChange={(e) => setData("password_confirmation", e.target.value)}
+              disabled={processing}
+              onChange={(e) =>
+                setData("password_confirmation", e.target.value)
+              }
             />
             <button
               type="button"
@@ -191,16 +307,23 @@ export function RegisterForm({ className, ...props }) {
               {showPassword2 ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {getError("password_confirmation") && (
+            <p className="text-red-500 text-sm">
+              {getError("password_confirmation")}
+            </p>
+          )}
         </div>
 
-        {/* Submit */}
+        {/* BUTTON */}
         <Button className="w-full" disabled={processing}>
           {processing ? "Processing..." : "Create Account"}
         </Button>
 
         <p className="text-center text-xs sm:text-sm text-muted-foreground mt-2">
           Already have an account?{" "}
-          <a href="/" className="underline hover:text-primary">Login</a>
+          <a href="/" className="underline hover:text-primary">
+            Login
+          </a>
         </p>
       </form>
     </div>
