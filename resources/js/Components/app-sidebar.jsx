@@ -3,18 +3,14 @@
 import * as React from "react"
 import { usePage } from "@inertiajs/react"
 import {
-  BarChartIcon,
-  ClipboardListIcon,
-  FolderIcon,
-  HelpCircleIcon,
   LayoutDashboardIcon,
-  SearchIcon,
+  ListIcon,
+  FileTextIcon,
+  BookOpenIcon,
   SettingsIcon,
   UsersIcon,
-  FileTextIcon,
 } from "lucide-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -28,105 +24,109 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ ...props }) {
-  // 🔹 Ambil data user login dari Laravel (Inertia shared prop)
-  const { auth } = usePage().props
-  const user = auth?.user
+import logo from "/public/img/psn.jpg"
+import wa from "/public/icon/whatsapp-svgrepo-com.svg"
 
-  // Jika belum login (null), tampilkan user kosong biar gak error
-  const currentUser = user || {
+export function AppSidebar({ ...props }) {
+  const { auth } = usePage().props
+  const user = auth?.user || {
     name: "Guest",
     email: "Not logged in",
     avatar: "/avatars/default.png",
   }
 
+  // ====== MENU UTAMA ======
+  const navMainItems = [
+    {
+      title: "Open Ticket",
+      url: route("ticket.open"),
+      icon: LayoutDashboardIcon,
+    },
+    {
+      title: "List Ticket",
+      url: route("ticket.list"),
+      icon: ListIcon,
+    },
+    {
+      title: "Report Ticket",
+      url: route("ticket.report"),
+      icon: FileTextIcon,
+    },
+    {
+      title: "Work Instruction",
+      url: route("ticket.wi"),
+      icon: BookOpenIcon,
+    },
+    // {
+    //   title: "Category Management",
+    //   url: route("ticket.admin.categories.index"), // 🔥 FIXED
+    //   icon: SettingsIcon,
+    // }
+  ]
+
+  // ====== TAMBAHKAN KALAU ROLE ADMIN ======
+  if (auth?.user?.role === "admin") {
+    navMainItems.push({
+      title: "User Management",
+      url: route("ticket.users.index"), // FIX: gunakan route yg benar!
+      icon: UsersIcon,
+    })
+    navMainItems.push({
+      title: "Category Management",
+      url: route("ticket.admin.categories.index"), // 🔥 FIXED
+      icon: SettingsIcon,
+    })
+
+  }
+
   const data = {
-    user: currentUser,
-    navMain: [
-      {
-        title: "Dashboard",
-        url: route("admin.dashboard"),
-        icon: LayoutDashboardIcon,
-      },
-      {
-        title: "Products",
-        url: route("admin.products"),
-        icon: BarChartIcon,
-      },
-    ],
-    users: [
-      {
-        name: "Management Users",
-        url: route("admin.users"),
-        icon: UsersIcon,
-      },
-    ],
-    media: [
-      {
-        name: "Banner",
-        url: route("admin.banner"),
-        icon: FolderIcon,
-      },
-    ],
-    orders: [
-      {
-        name: "Orders",
-        url: route("admin.orders"),
-        icon: FileTextIcon,
-      },
-    ],
-    documents: [
-      {
-        name: "Reports",
-        url: route("admin.reports"),
-        icon: ClipboardListIcon,
-      },
-    ],
+    user,
+    navMain: navMainItems,
     navSecondary: [
       {
-        title: "Settings",
-        url: route("admin.settings"),
-        icon: SettingsIcon,
-      },
-      {
-        title: "Get Help",
-        url: route("admin.getHelp"),
-        icon: HelpCircleIcon,
-      },
-      {
-        title: "Search",
-        url: route("admin.search"),
-        icon: SearchIcon,
+        title: "Admin WA",
+        url: "https://wa.me/628xxxxxxx", // ganti dengan nomor WA admin
+        icon: wa,
       },
     ],
-  }
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       {/* Header */}
+      {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href={route("admin.dashboard")}>
-                <span className="text-base font-semibold">appcare.id</span>
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-1.5 flex items-center gap-2"
+            >
+              <a href={route("ticket.dashboard")} className="flex items-center gap-3">
+
+                {/* LOGO */}
+                <img
+                  src={logo}     // ganti sesuai lokasi logo kamu
+                  alt="Logo"
+                  className="w-12 h-10 object-contain"
+                />
+
+                {/* TITLE */}
+                <span className="text-base font-semibold">Ticketing</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
+
       {/* Content */}
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments label="Users" items={data.users} />
-        <NavDocuments label="Media" items={data.media} />
-        <NavDocuments label="Orders" items={data.orders} />
-        <NavDocuments label="Documents" items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
 
-      {/* Footer - User info */}
+      {/* Footer */}
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>

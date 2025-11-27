@@ -4,53 +4,120 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class LoginController extends Controller
 {
-    // Halaman login
     public function index()
     {
         if (Auth::check()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('ticket.dashboard');
         }
 
-        // 👇 Pastikan path di sini sama dengan folder kamu di `resources/js/pages`
-        return Inertia::render('login');
+        return Inertia::render('Login', [
+            'recaptcha_site_key' => env('RECAPTCHA_SITE_KEY')
+        ]);
     }
 
-    // Proses login
     public function authenticate(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'min:6'],
+            'email'    => 'required|email',
+            'password' => 'required',
+            'g-recaptcha-response' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        // ============================
+        // 1. VALIDASI reCAPTCHA v2
+        // ============================
+        $captcha = $this->validateRecaptcha($request->input('g-recaptcha-response'));
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-
-            // Cek role admin
-            if (Auth::user()->role !== 'admin') {
-                Auth::logout();
-                return back()->withErrors(['email' => 'Akses ditolak. Bukan admin.']);
-            }
-
-            return redirect()->route('admin.dashboard');
+        if (!$captcha['success']) {
+            return back()->withErrors([
+                'captcha' => 'Verifikasi CAPTCHA gagal. Silakan coba lagi.'
+            ]);
         }
 
-        return back()->withErrors(['email' => 'Email atau password salah.']);
+        // ============================
+        // 2. RATE LIMIT (5x salah / 60 detik)
+        // ============================
+        $key = 'login:' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+
+            return back()->withErrors([
+                'rate' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik."
+            ]);
+        }
+
+        RateLimiter::hit($key, 60);
+
+        // ============================
+        // 3. PROSES LOGIN
+        // ============================
+        $credentials = $request->only('email', 'password');
+
+        if (!Auth::attempt($credentials)) {
+            Log::warning("Login gagal", [
+                'email' => $request->email,
+                'ip'    => $request->ip(),
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Email atau password salah.'
+            ]);
+        }
+
+        // ============================
+        // 4. CEK EMAIL VERIFIED
+        // ============================
+        if (Auth::user()->email_verified_at === null) {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Email belum diverifikasi. Silakan cek OTP Anda.'
+            ]);
+        }
+
+        // ============================
+        // 5. LOGIN SUKSES
+        // ============================
+        $request->session()->regenerate();
+
+        Log::info("Login sukses", [
+            'user_id' => Auth::id(),
+            'email'   => Auth::user()->email,
+            'ip'      => $request->ip(),
+        ]);
+
+        return redirect()->route('ticket.dashboard');
     }
 
-    // Logout
+    private function validateRecaptcha($token)
+    {
+        $secret = env("RECAPTCHA_SECRET_KEY");
+
+        $response = Http::asForm()->post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            [
+                'secret'   => $secret,
+                'response' => $token
+            ]
+        );
+
+        return $response->json();
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('admin.login');
+
+        return redirect()->route('auth.login');
     }
 }
