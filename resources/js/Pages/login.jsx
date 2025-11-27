@@ -1,7 +1,7 @@
 "use client"
 
 import bglogo from "/public/img/login.jpg"
-import logo from "/public/img/psn.jpg"   // ⬅️ tambahkan logo kamu
+import logo from "/public/img/psn.jpg" 
 import  LoginForm  from "@/components/login-form"
 
 export default function LoginPage() {

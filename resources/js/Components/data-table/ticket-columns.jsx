@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal } from "lucide-react"
 import { router } from "@inertiajs/react"
+import ActionDropdown from "@/components/ActionDropdown"
 
 export const ticketColumns = [
   { accessorKey: "ticket_number", header: "Ticket Number" },
@@ -30,8 +31,8 @@ export const ticketColumns = [
       return (
         <Badge variant={
           v === "Open" ? "destructive" :
-          v === "Close" ? "secondary" :
-          "outline"
+            v === "Close" ? "secondary" :
+              "outline"
         }>
           {v}
         </Badge>
@@ -43,37 +44,15 @@ export const ticketColumns = [
   { accessorKey: "assigned_date", header: "Assigned Date" },
   { accessorKey: "end_date", header: "End Date" },
 
-  {
-    header: "Actions",
-    id: "actions",
-    meta: { sticky: true },
+  // {
+  //   header: "Actions",
+  //   id: "actions",
+  //   meta: { sticky: true },
 
-    cell: ({ row }) => {
-      const ticket = row.original
+  //   cell: ({ row }) => {
+  //     const ticket = row.original;
+  //     return <ActionDropdown ticket={ticket} />;
+  //   }
 
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => window.location.href = route("ticket.view", ticket.ticket_number)}
-            >
-              View Ticket
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => router.visit(route("ticket.update", { ticket_number: ticket.ticket_number }))}
-            >
-              Update Ticket
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    }
-  }
+  // }
 ]

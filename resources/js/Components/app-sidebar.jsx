@@ -57,6 +57,11 @@ export function AppSidebar({ ...props }) {
       url: route("ticket.wi"),
       icon: BookOpenIcon,
     },
+    // {
+    //   title: "Category Management",
+    //   url: route("ticket.admin.categories.index"), // 🔥 FIXED
+    //   icon: SettingsIcon,
+    // }
   ]
 
   // ====== TAMBAHKAN KALAU ROLE ADMIN ======
@@ -66,6 +71,12 @@ export function AppSidebar({ ...props }) {
       url: route("ticket.users.index"), // FIX: gunakan route yg benar!
       icon: UsersIcon,
     })
+    navMainItems.push({
+      title: "Category Management",
+      url: route("ticket.admin.categories.index"), // 🔥 FIXED
+      icon: SettingsIcon,
+    })
+
   }
 
   const data = {
@@ -82,6 +93,7 @@ export function AppSidebar({ ...props }) {
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
+      {/* Header */}
       {/* Header */}
       <SidebarHeader>
         <SidebarMenu>

@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             SubDepartmentSeeder::class,
             LocationSeeder::class,
             PositionSeeder::class,
+            CategorySeeder::class,
         ]);
     }
 }

@@ -6,12 +6,31 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { usePage } from "@inertiajs/react";
 
-export default function Dashboard() {
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+
+export default function Dashboard() {
   const { total_tickets, summaryCategories, matrix } = usePage().props;
-  const gateways = Array.from(new Set(matrix.flatMap(row => 
-    Object.keys(row).filter(key => key !== 'category')
-  )));
+
+  // Ambil gateway dari matrix secara otomatis
+  const gateways = Array.from(
+    new Set(
+      matrix.flatMap((row) => Object.keys(row).filter((key) => key !== "category"))
+    )
+  );
 
   return (
     <SidebarProvider>
@@ -20,66 +39,104 @@ export default function Dashboard() {
       <SidebarInset>
         <SiteHeader
           title="Dashboard"
-          description="Ringkasan aktivitas gateway & SMT ticket"
+          description="Ringkasan aktivitas Gateway & SMT Ticket"
         />
 
         <div className="p-6 space-y-10">
 
-          {/* ===================== TOTAL TICKETS ===================== */}
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <h2 className="text-lg font-bold">Total Ticket</h2>
-            <p className="text-4xl font-extrabold mt-2">{total_tickets}</p>
-          </div>
+          {/* =================== TOTAL TICKET =================== */}
+          <Card className="border border-gray-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold tracking-tight text-gray-700">
+                TOTAL TICKET
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-6xl font-bold text-blue-700">
+                {total_tickets}
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* ===================== SUMMARY CATEGORY ===================== */}
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <h2 className="text-lg font-bold mb-4">Summary Gateway SMT Ticket</h2>
-
-            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-7 gap-4">
-              {summaryCategories.map((item, i) => (
-                <div
-                  key={i}
-                  className="border p-3 rounded-md text-center bg-gray-50 hover:bg-gray-100"
-                >
-                  <p className="text-xs text-gray-500">{item.category}</p>
-                  <p className="text-xl font-semibold">{item.total}</p>
-                </div>
-              ))}
+          {/* =================== SUMMARY GATEWAY SMT =================== */}
+          <Card className="border border-gray-200 shadow-md">
+            <div className="bg-blue-900 text-white px-4 py-3 rounded-t-md">
+              <h2 className="text-lg font-semibold text-center tracking-wide">
+                SUMMARY GATEWAY SMT TICKET
+              </h2>
             </div>
-          </div>
 
-          {/* ===================== MATRIX TABLE ===================== */}
-          <div className="bg-white p-6 rounded-lg shadow border overflow-auto">
-            <h2 className="text-lg font-bold mb-4">Summary GAR & SMT Ticket</h2>
-
-            <table className="w-full border-collapse border text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border px-3 py-2">Category</th>
-
-                  {gateways.map(gw => (
-                    <th key={gw} className="border px-3 py-2 text-center">{gw}</th>
-                  ))}
-                </tr>
-              </thead>
-
-
-              <tbody>
-                {matrix.map((row, i) => (
-                  <tr key={i}>
-                    <td className="border px-3 py-2 font-medium">{row.category}</td>
-
-                    {gateways.map(gw => (
-                      <td key={gw} className="border px-3 py-2 text-center">
-                        {row[gw]}
-                      </td>
-                    ))}
-                  </tr>
+            <CardContent className="mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-4">
+                {summaryCategories.map((item, i) => (
+                  <div
+                    key={i}
+                    className="p-3 border rounded-md bg-gray-50 hover:bg-gray-100 transition text-center shadow-sm"
+                  >
+                    <p className="text-xs text-gray-600 tracking-wide">
+                      {item.category}
+                    </p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      {item.total}
+                    </p>
+                  </div>
                 ))}
-              </tbody>
+              </div>
+            </CardContent>
+          </Card>
 
-            </table>
-          </div>
+          {/* =================== MATRIX GAR & SMT =================== */}
+          <Card className="border border-gray-300 shadow-md overflow-hidden">
+            <div className="bg-blue-900 text-white px-4 py-3 rounded-t-md">
+              <h2 className="text-lg font-semibold text-center tracking-wide">
+                SUMMARY GAR & SMT TICKET
+              </h2>
+            </div>
+
+            <CardContent className="p-0 overflow-auto">
+              <Table className="text-sm border-collapse">
+                <TableHeader>
+                  <TableRow className="bg-blue-800 text-white">
+                    <TableHead className="border border-blue-700 px-3 py-2 text-center w-40">
+                      CATEGORY
+                    </TableHead>
+
+                    {gateways.map((gw) => (
+                      <TableHead
+                        key={gw}
+                        className="border border-blue-700 px-3 py-2 text-center"
+                      >
+                        {gw}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                  {matrix.map((row, i) => (
+                    <TableRow key={i} className="even:bg-gray-50">
+                      <TableCell className="border px-3 py-2 font-medium text-gray-800">
+                        {row.category}
+                      </TableCell>
+
+                      {gateways.map((gw) => (
+                        <TableCell
+                          key={gw}
+                          className="border px-3 py-2 text-center text-gray-700"
+                        >
+                          {row[gw] === "-" ? "-" : (
+                            <span className="font-semibold text-blue-700">
+                              {row[gw]}
+                            </span>
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </SidebarInset>
     </SidebarProvider>
