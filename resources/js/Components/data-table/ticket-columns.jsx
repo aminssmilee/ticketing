@@ -5,54 +5,198 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { MoreHorizontal } from "lucide-react"
-import { router } from "@inertiajs/react"
+import { ChevronDown } from "lucide-react"
 import ActionDropdown from "@/components/ActionDropdown"
 
 export const ticketColumns = [
+
   { accessorKey: "ticket_number", header: "Ticket Number" },
   { accessorKey: "gateway", header: "Gateway" },
   { accessorKey: "ticket_date", header: "Ticket Date" },
   { accessorKey: "start_date", header: "Start Date" },
-  { accessorKey: "category", header: "Category" },
-  { accessorKey: "subcategory", header: "Sub Category" },
-  { accessorKey: "flag", header: "Flag" },
-  { accessorKey: "alarm", header: "Alarm" },
-  { accessorKey: "indication", header: "Indication" },
-  { accessorKey: "updated_by", header: "Updated By" },
-  { accessorKey: "pic", header: "PIC" },
 
+  // =============================
+  // CATEGORY
+  // =============================
+  {
+    accessorKey: "category",
+    header: (
+      <HeaderFilter
+        label="Category"
+        keyName="category"
+        onSelect="filterCategory"
+      />
+    ),
+  },
+
+  // =============================
+  // SUB CATEGORY
+  // =============================
+  {
+    accessorKey: "subcategory",
+    header: (
+      <HeaderFilter
+        label="Sub Category"
+        keyName="subcategory"
+        onSelect="filterSub"
+      />
+    ),
+  },
+
+  // =============================
+  // SERIAL NUMBER
+  // =============================
+  {
+    accessorKey: "serial_number",
+    header: (
+      <HeaderFilter
+        label="Serial Number"
+        keyName="serial_number"
+        onSelect="filterSerial"
+      />
+    ),
+  },
+
+  // =============================
+  // FLAG
+  // =============================
+  {
+    accessorKey: "flag",
+    header: (
+      <HeaderFilter
+        label="Flag"
+        keyName="flag"
+        onSelect="filterFlag"
+      />
+    ),
+  },
+
+  // =============================
+  // ALARM
+  // =============================
+  {
+    accessorKey: "alarm",
+    header: (
+      <HeaderFilter
+        label="Alarm"
+        keyName="alarm"
+        onSelect="filterAlarm"
+      />
+    ),
+  },
+
+  // =============================
+  // INDICATION
+  // =============================
+  {
+    accessorKey: "indication",
+    header: (
+      <HeaderFilter
+        label="Indication"
+        keyName="indication"
+        onSelect="filterIndication"
+      />
+    ),
+  },
+
+  { accessorKey: "updated_by", header: "Updated By" },
+
+  // =============================
+  // PIC
+  // =============================
+  {
+    accessorKey: "pic",
+    header: (
+      <HeaderFilter
+        label="Ticket PIC"
+        keyName="pic"
+        onSelect="filterPIC"
+      />
+    ),
+  },
+
+  // =============================
+  // STATUS
+  // =============================
   {
     accessorKey: "status",
-    header: "Status",
+    header: (
+      <HeaderFilter
+        label="Status"
+        keyName="status"
+        onSelect="filterStatus"
+      />
+    ),
     cell: ({ row }) => {
       const v = row.getValue("status")
       return (
-        <Badge variant={
-          v === "Open" ? "destructive" :
-            v === "Close" ? "secondary" :
-              "outline"
-        }>
+        <Badge
+          variant={
+            v === "Open"
+              ? "destructive"
+              : v === "Close"
+              ? "secondary"
+              : "outline"
+          }
+        >
           {v}
         </Badge>
       )
-    }
+    },
   },
 
   { accessorKey: "duration", header: "Duration" },
+  { accessorKey: "assigned_by", header: "Assigned By" },
   { accessorKey: "assigned_date", header: "Assigned Date" },
   { accessorKey: "end_date", header: "End Date" },
 
-  // {
-  //   header: "Actions",
-  //   id: "actions",
-  //   meta: { sticky: true },
-
-  //   cell: ({ row }) => {
-  //     const ticket = row.original;
-  //     return <ActionDropdown ticket={ticket} />;
-  //   }
-
-  // }
+  // =============================
+  // ACTIONS
+  // =============================
+  {
+    header: "Actions",
+    id: "actions",
+    meta: { sticky: true },
+    cell: ({ row }) => {
+      const ticket = row.original
+      return <ActionDropdown ticket={ticket} />
+    },
+  },
 ]
+
+/* ============================================================================
+   COMPONENT: Header with Dropdown Filter
+============================================================================ */
+function HeaderFilter({ label, keyName, onSelect }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span>{label}</span>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="p-1 hover:bg-accent rounded">
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto">
+
+          {/* ALL */}
+          <DropdownMenuItem onClick={() => window[onSelect]?.("all")}>
+            All
+          </DropdownMenuItem>
+
+          {/* DYNAMIC ITEMS */}
+          {window.getUnique?.(window.ticketData || [], keyName)?.map((c) => (
+            <DropdownMenuItem
+              key={c}
+              onClick={() => window[onSelect]?.(c)}
+            >
+              {c}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}

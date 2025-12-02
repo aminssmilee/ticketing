@@ -6,6 +6,7 @@ import { ticketColumns } from "@/components/data-table/ticket-columns"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { usePage, router } from "@inertiajs/react"
 
+
 import {
     Select,
     SelectTrigger,
@@ -23,6 +24,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
+import { toast } from "sonner";
+
 
 
 export default function List() {
@@ -31,12 +34,75 @@ export default function List() {
 
     const { tickets } = usePage().props
     const [status, setStatus] = useState("all")
+    const [category, setCategory] = useState("all")
+    const [subcategory, setSubcategory] = useState("all")
+    const [serial, setSerial] = useState("all")
+    const [flag, setFlag] = useState("all")
+    const [alarm, setAlarm] = useState("all")
+    const [indication, setIndication] = useState("all")
+    const [pic, setPic] = useState("all")
+    const [search, setSearch] = useState("")
 
     // === FILTER DATA ===
+    // Ambil unique values dari kolom tertentu
+    const getUnique = (data, key) => {
+        return [...new Set(data.map((item) => item[key]).filter(Boolean))]
+    }
+    window.filterStatus = (value) => {
+        setStatus(value)
+    }
+    window.ticketData = tickets.data;
+
+    window.filterCategory = (v) => setCategory(v);
+    window.filterSub = (v) => setSubcategory(v);
+    window.filterSerial = (v) => setSerial(v);
+    window.filterFlag = (v) => setFlag(v);
+    window.filterAlarm = (v) => setAlarm(v);
+    window.filterIndication = (v) => setIndication(v);
+    window.filterPIC = (v) => setPic(v);
+
+
     const filteredData = useMemo(() => {
-        if (status === "all") return tickets.data
-        return tickets.data.filter((t) => t.status.toLowerCase() === status)
-    }, [status, tickets.data])
+        const searchValue = search.toLowerCase();
+
+        return tickets.data.filter((t) => {
+
+            if (status !== "all" && t.status.toLowerCase() !== status) return false
+            if (category !== "all" && t.category !== category) return false
+            if (subcategory !== "all" && t.subcategory !== subcategory) return false
+            if (serial !== "all" && t.serial_number !== serial) return false
+            if (flag !== "all" && t.flag !== flag) return false
+            if (alarm !== "all" && t.alarm !== alarm) return false
+            if (indication !== "all" && t.indication !== indication) return false
+
+            // === SEARCH (FIXED) ===
+            if (
+                search &&
+                !(
+                    t.ticket_number?.toLowerCase().includes(searchValue) ||
+                    t.serial_number?.toLowerCase().includes(searchValue) ||
+                    t.pic?.toLowerCase().includes(searchValue) ||
+                    t.status?.toLowerCase().includes(searchValue) ||
+                    t.gateway?.toLowerCase().includes(searchValue) ||
+                    t.category?.toLowerCase().includes(searchValue)
+                )
+            ) return false
+
+            return true
+        })
+    }, [
+        tickets.data,
+        status,
+        category,
+        subcategory,
+        serial,
+        flag,
+        alarm,
+        indication,
+        pic,
+        search // ← WAJIB ADA!
+    ])
+
 
     // === PAGINATION ===
     const pagination = {
@@ -57,9 +123,9 @@ export default function List() {
             header: "Action",
             id: "action_only",
             cell: ({ row }) => {
-                const ticket = row.original
+                const ticket = row.original;
 
-                const isClosed = ticket.status?.toLowerCase() === "closed"
+                const isClosed = ticket.status?.toLowerCase() === "closed";
 
                 return (
                     <div className="flex">
@@ -72,7 +138,7 @@ export default function List() {
 
                             <DropdownMenuContent align="center">
 
-                                {/* VIEW TICKET SELALU ADA */}
+                                {/* VIEW */}
                                 <DropdownMenuItem
                                     onClick={() =>
                                         window.location.href = route("ticket.view", ticket.ticket_number)
@@ -81,7 +147,7 @@ export default function List() {
                                     View Ticket
                                 </DropdownMenuItem>
 
-                                {/* UPDATE TICKET — hanya muncul jika status bukan closed */}
+                                {/* UPDATE */}
                                 {!isClosed && (
                                     <DropdownMenuItem
                                         onClick={() =>
@@ -94,13 +160,48 @@ export default function List() {
                                     </DropdownMenuItem>
                                 )}
 
+                                {/* DELETE */}
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600"
+                                    onClick={() => handleDelete(ticket.ticket_number)}
+                                >
+                                    Delete Ticket
+                                </DropdownMenuItem>
+
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                 )
             }
         }
-    ]
+    ];
+
+    const handleDelete = (ticket_number) => {
+        if (!confirm("Are you sure you want to delete this ticket?")) return;
+
+        router.delete(route("ticket.delete", ticket_number), {
+            onSuccess: () => {
+                toast.success("Ticket deleted successfully", {
+                    description: `Ticket ${ticket_number} has been removed.`,
+                });
+            },
+
+            onError: () => {
+                toast.error("Delete failed", {
+                    description: "Something went wrong while deleting ticket.",
+                });
+            },
+        });
+    };
+
+
+
+    window.ticketData = tickets.data;
+
+    // Ambil data unik dari kolom tertentu
+    window.getUnique = (arr, key) =>
+        [...new Set(arr.map((x) => x[key]).filter(Boolean))];
+
 
 
     return (
@@ -130,64 +231,40 @@ export default function List() {
                             </p>
                         </div>
 
-                        {/* Filter */}
-                        <div className="mb-4 flex justify-end items-center gap-4 px-2">
-                            <Label className="text-sm">Filter by status</Label>
-
-                            <Select value={status} onValueChange={setStatus}>
-                                <SelectTrigger className="w-40">
-                                    <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="open">Open</SelectItem>
-                                    <SelectItem value="update">On Progress</SelectItem>
-                                    <SelectItem value="closed">Done</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        {/* Search Dummy */}
+                        <div className="mb-4 flex md:justify-end items-center gap-3 px-2">
+                            <input
+                                type="text"
+                                placeholder="Search tickets..."
+                                className="border rounded-md px-3 py-2 text-sm w-64"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
                         </div>
+
 
                         {/* === TABLES SIDE BY SIDE === */}
                         <div className="flex flex-row w-full gap-2">
 
                             {/* === TABLE WRAPPER (Desktop) === */}
-                            <div className="hidden md:flex w-full border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="flex flex-row w-full gap-2">
 
                                 {/* LEFT TABLE (Scrollable) */}
-                                <div className="flex-1 overflow-x-auto">
-                                    <div className="min-w-[1800px]">
+                                <div className="flex-1 overflow-x-hidden border border-gray-200 rounded-lg">
+                                    <div className="w-full">
                                         <TicketTable
                                             columns={ticketColumns}
                                             data={filteredData}
                                             pagination={pagination}
+                                            rowClassName="h-12"
                                             onRowSelect={setSelectedRow}
                                             selectedRow={selectedRow}
                                         />
-                                    </div>
-                                </div>
 
-                                {/* RIGHT TABLE (Action Only - Fixed) */}
-                                <div className="w-[130px] border-gray-200">
-                                    <div className="min-w-[130px]">
-                                        <TicketTable
-                                            columns={actionOnlyColumn}
-                                            data={filteredData}
-                                        />
                                     </div>
                                 </div>
 
                             </div>
-
-                            {/* === MOBILE VIEW (Single table with action inside row) === */}
-                            <div className="w-full md:hidden">
-                                <TicketTable
-                                    columns={[...ticketColumns, ...actionOnlyColumn]}
-                                    data={filteredData}
-                                    pagination={pagination}
-                                />
-                            </div>
-
                         </div>
 
                         {/* === PAGINATION === */}
@@ -196,8 +273,8 @@ export default function List() {
                             <div className="flex w-full items-center gap-8 lg:w-fit">
 
                                 {/* ROWS PER PAGE */}
-                                <div className="hidden items-center gap-2 lg:flex">
-                                    <Label className="text-sm font-normal">
+                                <div className="items-center gap-2 lg:flex">
+                                    <Label className="text-sm font-normal hidden">
                                         Rows per page
                                     </Label>
 

@@ -15,7 +15,7 @@ import { ArrowUpRight } from "lucide-react"
 
 export function TicketTable({ columns = [], data = [], onRowSelect, selectedRow }) {
   return (
-    <div className="w-full overflow-x-auto border rounded-md p-2 relative">
+    <div className="w-full overflow-x-auto border rounded-md relative">
 
       <Table className="min-w-max border-separate border-spacing-0">
 
@@ -25,7 +25,10 @@ export function TicketTable({ columns = [], data = [], onRowSelect, selectedRow 
             {columns.map((col) => (
               <TableHead
                 key={col.accessorKey ?? col.id}
-                className="text-xs whitespace-nowrap px-4 py-2 border-b bg-white"
+                className={`
+                  text-xs whitespace-nowrap px-4 py-2 border-b bg-white
+                  ${col.id === "actions" ? "sticky right-0 z-40 bg-white shadow-left" : ""}
+                `}
               >
                 {col.header}
               </TableHead>
@@ -48,12 +51,17 @@ export function TicketTable({ columns = [], data = [], onRowSelect, selectedRow 
                 const value = row[col.accessorKey]
                 const uniqueKey = `${row.ticket_number}-${col.accessorKey || col.id}`
 
-                // ===== ACTION COLUMN =====
+                // ===== ACTION COLUMN (STICKY) =====
                 if (col.id === "actions") {
                   return (
                     <TableCell
                       key={uniqueKey}
-                      className="text-xs px-2 py-2 border-b whitespace-nowrap md:w-[80px] w-[20px] text-center"
+                      className={`
+  text-xs px-2 py-2 border-b whitespace-nowrap 
+  md:w-[60px] w-[50px] text-center
+  sticky right-0 bg-white z-30 shadow-left 
+`}
+
                     >
                       <div className="flex items-center justify-center w-full">
                         {col.cell({
@@ -101,7 +109,7 @@ export function TicketTable({ columns = [], data = [], onRowSelect, selectedRow 
                   )
                 }
 
-                // ===== DEFAULT CELL =====
+                // ===== DEFAULT =====
                 return (
                   <TableCell
                     key={uniqueKey}

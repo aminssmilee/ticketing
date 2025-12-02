@@ -21,6 +21,8 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\SubCategoryController;
 
 
+
+
 /*
 |--------------------------------------------------------------------------
 | AUTH ROUTES
@@ -49,6 +51,7 @@ Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showRese
 Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 
 
+
 /*
 |--------------------------------------------------------------------------
 | TICKETING SYSTEM (PROTECTED)
@@ -64,15 +67,22 @@ Route::prefix('ticket')
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Open ticket
+        // Open ticket
         Route::get('/open', [TicketController::class, 'open'])->name('open');
         Route::post('/open', [TicketController::class, 'store'])->name('store');
 
         // List ticket
         Route::get('/list', [TicketController::class, 'list'])->name('list');
 
+        // ===========================
+        // REPORT (BENAR)
+        // ===========================
         // Report
-        Route::get('/report', fn() => Inertia::render('Ticket/Report'))->name('report');
+        Route::get('/report', [TicketController::class, 'report'])->name('report');
+
         Route::get('/report/download', [TicketController::class, 'downloadReport'])->name('report.download');
+        Route::get('/report/excel', [TicketController::class, 'exportExcel'])->name('report.excel');
+
 
         // Work Instruction
         Route::get('/wi', [WorkInstructionController::class, 'index'])->name('wi');
@@ -91,6 +101,31 @@ Route::prefix('ticket')
             ->name('ticket.close');
 
 
+
+
+        /*
+|--------------------------------------------------------------------------
+| ACCOUNT PAGE (FOR ALL AUTHENTICATED USERS)
+|--------------------------------------------------------------------------
+*/
+        Route::get('/account', function () {
+            return Inertia::render('Profile', [
+                'auth' => [
+                    'user' => auth()->user()->load([
+                        'position',
+                        'department',
+                        'subDepartment',
+                        'gateway'
+                    ])
+                ]
+            ]);
+        })->name('account');
+
+
+        Route::put('/account/update', [UserController::class, 'updateProfile'])
+            ->name('account.update');
+
+
         /*
         |--------------------------------------------------------------------------
         | ADMIN ONLY
@@ -99,7 +134,9 @@ Route::prefix('ticket')
         Route::middleware('admin')->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::post('/users/update-role', [UserController::class, 'updateRole'])->name('users.updateRole');
+            Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
             Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+            Route::get('/users/json', [UserController::class, 'json']);
 
             // ===========================
             // CATEGORY MANAGEMENT
@@ -117,5 +154,8 @@ Route::prefix('ticket')
             // Sub Category
             Route::post('/categories/{id}/sub', [SubCategoryController::class, 'store'])->name('admin.subcategories.store');
             Route::delete('/subcategories/{id}', [SubCategoryController::class, 'destroy'])->name('admin.subcategories.destroy');
+
+            Route::delete('/delete/{ticket_number}', [TicketController::class, 'destroy'])
+                ->name('delete');
         });
     });

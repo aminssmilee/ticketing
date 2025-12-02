@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select"
 
 import { usePage, router } from "@inertiajs/react"
+import { toast } from "sonner";
+
 
 // ============================================================
 // Helper: generate datetime-local now()
@@ -80,13 +82,54 @@ export default function Open() {
     }))
   }
 
+  const validateForm = () => {
+    if (!form.category_id)
+      return "Category tidak boleh kosong";
+
+    if (!form.sub_category_id)
+      return "Sub Category tidak boleh kosong";
+
+    if (!form.flag)
+      return "Flag wajib dipilih";
+
+    if (!form.serial_number.trim())
+      return "Serial Number wajib diisi";
+
+    if (!form.alarm.trim())
+      return "Alarm wajib diisi";
+
+    if (!form.indication.trim())
+      return "Indication wajib diisi";
+
+    if (!form.action.trim())
+      return "Action wajib diisi";
+
+    if (!form.description.trim())
+      return "Description wajib diisi";
+
+    return null; // valid semua
+  };
+
+
   // ============================================================
   // SUBMIT TICKET
   // ============================================================
   const submitTicket = () => {
+    const error = validateForm();
+
+    if (error) {
+      toast.error("Form tidak lengkap", {
+        description: error,
+      });
+      return;
+    }
+
     router.post("/ticket/open", form, {
       onSuccess: () => {
-        // RESET FORM SETELAH POST
+        toast.success("Ticket berhasil dibuat!", {
+          description: "Tiket kamu sudah masuk ke sistem.",
+        });
+
         setForm({
           gateway_id: gateway?.id ?? null,
           start_date: getLocalDateTime(),
@@ -98,10 +141,18 @@ export default function Open() {
           indication: "",
           action: "",
           description: "",
-        })
+        });
       },
-    })
-  }
+
+      onError: (err) => {
+        toast.error("Gagal membuat ticket", {
+          description: "Pastikan semua field sudah benar.",
+        });
+        console.error("Error submit:", err);
+      },
+    });
+  };
+
 
   return (
     <SidebarProvider>
