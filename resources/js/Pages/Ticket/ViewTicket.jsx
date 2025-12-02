@@ -78,7 +78,7 @@ export default function ViewTicket() {
               <p><strong>PIC:</strong> {ticket.pic ?? "-"}</p>
               <p><strong>Duration:</strong> {ticket.duration ?? "-"}</p>
 
-              <p><strong>End Date:</strong> {ticket.end_date ?? "-"}</p>
+              <p><strong>End Date:</strong> {ticket.updated_at ?? "-"}</p>
             </div>
           </div>
 

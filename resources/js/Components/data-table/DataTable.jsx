@@ -35,7 +35,10 @@ export function DataTable({
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th key={header.id} className="border p-2 text-left">
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
                 </th>
               ))}
             </tr>
@@ -43,36 +46,35 @@ export function DataTable({
         </thead>
 
         <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="border p-2">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
+          {table.getRowModel().rows.length > 0 ? (
+            table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="border p-2">
+                    {flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext()
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="text-center py-6 text-muted-foreground"
+              >
+                No data available
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 
-      {/* Pagination */}
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          disabled={!table.getCanPreviousPage()}
-          onClick={() => table.previousPage()}
-          className="px-3 py-1 border rounded"
-        >
-          Prev
-        </button>
-
-        <button
-          disabled={!table.getCanNextPage()}
-          onClick={() => table.nextPage()}
-          className="px-3 py-1 border rounded"
-        >
-          Next
-        </button>
-      </div>
+      {/* ❌ REMOVE pagination default
+          Pagination handled in parent (UserManagement)
+      */}
     </div>
   )
 }

@@ -29,6 +29,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { router } from "@inertiajs/react"
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar()
@@ -94,18 +95,24 @@ export function NavUser({ user }) {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <UserCircleIcon />
+              <DropdownMenuItem
+                onClick={() => router.visit(route("ticket.account"))}
+                className="cursor-pointer"
+              >
+                <UserCircleIcon className="mr-2 h-4 w-4" />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
+
+
+
+              {/* <DropdownMenuItem>
                 <CreditCardIcon />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <BellIcon />
                 Notifications
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />

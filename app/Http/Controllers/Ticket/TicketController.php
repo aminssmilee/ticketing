@@ -6,6 +6,10 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Http\Controllers\Controller;
+use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Box\Spout\Common\Entity\Style\Color;
+
+
 
 class TicketController extends Controller
 {
@@ -166,6 +170,7 @@ class TicketController extends Controller
 
                 'category'      => $t->categoryRef->name ?? '-',
                 'subcategory'   => $t->subCategoryRef->name ?? '-',
+                'serial_number' => $t->serial_number,
 
                 'flag'          => strtoupper($t->flag),
                 'alarm'         => $t->alarm,
@@ -175,6 +180,8 @@ class TicketController extends Controller
                 'pic'           => ($t->gateway->code ?? '') . ' - ' . ($t->gateway->name ?? '-'),
                 'status'        => ucfirst($t->status),
                 'duration'      => "-",
+
+                'assigned_by' => $t->user->name ?? '-',
                 'assigned_date' => $t->start_date,
                 'end_date'      => $t->end_date ?? "-",
             ];
@@ -268,56 +275,7 @@ class TicketController extends Controller
     /**
      * Download CSV Report
      */
-    public function downloadReport(Request $request)
-    {
-        $tickets = Ticket::query()
-            ->when($request->start_date, fn($q) => $q->whereDate('start_date', '>=', $request->start_date))
-            ->when($request->end_date, fn($q) => $q->whereDate('start_date', '<=', $request->end_date))
-            ->when($request->category, fn($q) => $q->where('category', 'like', "%{$request->category}%"))
-            ->when($request->sub_category, fn($q) => $q->where('sub_category', 'like', "%{$request->sub_category}%"))
-            ->with('gateway')
-            ->orderBy('created_at', 'desc')
-            ->get();
 
-        $filename = "ticket_report_" . now()->format("Ymd_His") . ".csv";
-
-        $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-        ];
-
-        $callback = function () use ($tickets) {
-            $file = fopen('php://output', 'w');
-
-            fputcsv($file, [
-                "Ticket Number",
-                "Gateway",
-                "Category",
-                "Sub Category",
-                "Start Date",
-                "Status",
-                "Alarm",
-                "Indication"
-            ]);
-
-            foreach ($tickets as $t) {
-                fputcsv($file, [
-                    $t->ticket_number,
-                    $t->gateway->name ?? "-",
-                    $t->category,
-                    $t->sub_category,
-                    $t->start_date,
-                    $t->status,
-                    $t->alarm,
-                    $t->indication,
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
 
     public function close(Request $request, $ticket_number)
     {
@@ -335,5 +293,83 @@ class TicketController extends Controller
         return redirect()
             ->route('ticket.view', $ticket_number)
             ->with('success', 'Ticket berhasil ditutup.');
+    }
+
+    public function destroy($ticket_number)
+    {
+        $ticket = Ticket::where('ticket_number', $ticket_number)->first();
+
+        if (!$ticket) {
+            return back(); // jangan with error
+        }
+
+        $ticket->delete();
+
+        return redirect()->back(); // jangan with success
+    }
+    public function report()
+    {
+        $categories = \App\Models\Category::with('subcategories')
+            ->orderBy('name')
+            ->get()
+            ->map(fn($c) => [
+                "id" => $c->id,
+                "name" => $c->name,
+                "subcategories" => $c->subcategories->map(fn($s) => [
+                    "id" => $s->id,
+                    "name" => $s->name
+                ])
+            ]);
+
+        return inertia("Ticket/Report", [
+            "categories" => $categories
+        ]);
+    }
+    public function exportExcel(Request $request)
+    {
+        $tickets = Ticket::query()
+            ->when($request->start_date, fn($q) => $q->whereDate('start_date', '>=', $request->start_date))
+            ->when($request->end_date, fn($q) => $q->whereDate('start_date', '<=', $request->end_date))
+            ->when($request->category, fn($q) => $q->where('category_id', $request->category))
+            ->when($request->sub_category, fn($q) => $q->where('sub_category_id', $request->sub_category))
+            ->with('gateway')
+            ->get();
+
+        $fileName = "ticket_report_" . now()->format("Ymd_His") . ".xlsx";
+
+        $writer = WriterEntityFactory::createXLSXWriter();
+        $writer->openToBrowser($fileName);
+
+        // Header
+        $header = WriterEntityFactory::createRowFromArray([
+            "Ticket Number",
+            "Gateway",
+            "Category",
+            "Sub Category",
+            "Start Date",
+            "Status",
+            "Alarm",
+            "Indication",
+        ]);
+
+        $writer->addRow($header);
+
+        // Rows
+        foreach ($tickets as $t) {
+            $row = WriterEntityFactory::createRowFromArray([
+                $t->ticket_number,
+                $t->gateway->name ?? "-",
+                $t->category,
+                $t->sub_category,
+                $t->start_date,
+                $t->status,
+                $t->alarm,
+                $t->indication,
+            ]);
+
+            $writer->addRow($row);
+        }
+
+        $writer->close();
     }
 }

@@ -6,85 +6,18 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { router } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 
-// ==== IMPORT SELECT SHADCN ====
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
-  SelectItem
+  SelectItem,
 } from "@/components/ui/select";
 
-
-// ============================
-// CATEGORY DATA (SAMA DENGAN WI)
-// ============================
-const CATEGORY_DATA = {
-  RF: [
-    "BDC", "BDC Controller", "BUC", "BUC Controller", "LNA Controller", "LNA Switch", "LNA",
-    "LNA Tracking", "Switch Box BUC", "Switch Box BDC", "BDC CSM", "Monopulse Plate",
-    "TRU", "TWTA", "TWTA RCU"
-  ],
-
-  Utility: ["Panel", "PAC", "Genset", "AC NWIEE", "UPS", "ATS"],
-
-  Ancillary: ["Dehidrator", "Rain Blower", "Lampu AWL", "Lampu Kingpost", "Lampu HUB", "TFCU/GPS", "10 MHz Distribution"],
-
-  Activity: ["Belum ada sub kategori"],
-
-  "Antenna Issue": ["Belum ada sub kategori"],
-  Antenna: ["ACU", "ADU", "Motorize", "Tracking", "KVM"],
-
-  "Diesel Refill": ["Belum ada sub kategori"],
-
-  "Electrical Report": ["Belum ada sub kategori"],
-
-  Guest: ["10 MHz Distribution"],
-
-  PM: [
-    "Warming Up Genset",
-    "Cleaning Genset, PKG, Tangki BBM & Sum Pit",
-    "Cleaning Filter UPS",
-    "PM UPS + Battery Testing & Test Discharge Battery ",
-    "Maintenance Cleaning AC Split & AC Antenna",
-    "Cleaning Filter Indoor PAC & Cuci Outdoor PAC",
-    "Maintenance PAC",
-    "Cleaning Panel Listrik",
-    "Load & Temperature Measurement",
-    "Grounding Measurement",
-    "N-G Voltage Measurement",
-    "Maintenance Genset",
-    "Electrical Power Quality Measurement",
-    "Capture/Setting Parameter RF & Utility",
-    "Check Ancillary System",
-    "Test Redundancy",
-    "PM Antenna Tracking System",
-    "PM Antenna Structure",
-    "Inspection & Cleaning Rain Blower",
-    "PM Antenna Structure TTC",
-    "Neutral to Grounding Measurement"
-  ],
-
-  CM: [
-    "Dehydrator", "Rain Blower", "Lampu AWL", "Lampu Kingpost", "Lampu HUB",
-    "10 MHz Distribution", "ACU", "ADU", "Motorize", "Tracking", "KVM",
-    "BDC", "BDC Controller", "BUC", "BUC Controller", "LNA Controller", "LNA Switch", "LNA",
-    "LNA Tracking", "Switch Box BUC", "Switch Box BDC", "BDC CSM", "Monopulse Plate",
-    "TRU", "TWTA", "TWTA RCU", "Panel", "PAC", "Genset", "AC NWIEE", "UPS", "ATS"
-  ],
-
-  Weather: ["Belum ada sub kategori"],
-  Monitoring: ["Belum ada sub kategori"],
-  Panel: ["Belum ada sub kategori"],
-  HUB: ["Belum ada sub kategori"],
-
-  TTC: ["Activity", "PM", "CM", "RF", "Ancillary", "Utility"],
-};
-
-
 export default function Report() {
+  const { categories = [] } = usePage().props;
 
   const [filters, setFilters] = useState({
     start_date: "",
@@ -93,13 +26,24 @@ export default function Report() {
     sub_category: "",
   });
 
-  const downloadReport = () => {
-    router.get(route("ticket.report.download"), filters, {
-      preserveState: true,
+  const [subCategories, setSubCategories] = useState([]);
+
+  const handleCategoryChange = (catId) => {
+    setFilters({
+      ...filters,
+      category: catId,
+      sub_category: "",
     });
+
+    const selected = categories.find((c) => String(c.id) === String(catId));
+    setSubCategories(selected?.subcategories || []);
   };
 
-
+  // FIX: DOWNLOAD MENGGUNAKAN window.location.href
+  const downloadExcel = () => {
+    const query = new URLSearchParams(filters).toString();
+    window.location.href = route("ticket.report.excel") + "?" + query;
+  };
 
   return (
     <SidebarProvider>
@@ -115,83 +59,86 @@ export default function Report() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-            {/* START DATE */}
+            {/* Start Date */}
             <div>
               <label className="text-sm font-medium">Start Date</label>
               <Input
                 type="date"
+                value={filters.start_date}
                 onChange={(e) =>
                   setFilters({ ...filters, start_date: e.target.value })
                 }
               />
             </div>
 
-            {/* END DATE */}
+            {/* End Date */}
             <div>
               <label className="text-sm font-medium">End Date</label>
               <Input
                 type="date"
+                value={filters.end_date}
                 onChange={(e) =>
                   setFilters({ ...filters, end_date: e.target.value })
                 }
               />
             </div>
 
-            {/* CATEGORY DROPDOWN */}
+            {/* Category */}
             <div>
               <label className="text-sm font-medium">Category</label>
 
               <Select
                 value={filters.category}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, category: value, sub_category: "" })
-                }
+                onValueChange={handleCategoryChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Category" />
                 </SelectTrigger>
 
                 <SelectContent>
-                  {Object.keys(CATEGORY_DATA).map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* SUB CATEGORY DROPDOWN */}
+            {/* Sub Category */}
             <div>
               <label className="text-sm font-medium">Sub Category</label>
 
               <Select
-                value={filters.sub_category}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, sub_category: value })
-                }
                 disabled={!filters.category}
+                value={filters.sub_category}
+                onValueChange={(val) =>
+                  setFilters({ ...filters, sub_category: val })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Sub Category" />
                 </SelectTrigger>
 
                 <SelectContent>
-                  {filters.category &&
-                    CATEGORY_DATA[filters.category].map((sub) => (
-                      <SelectItem key={sub} value={sub}>
-                        {sub}
+                  {subCategories.length > 0 ? (
+                    subCategories.map((sub) => (
+                      <SelectItem key={sub.id} value={String(sub.id)}>
+                        {sub.name}
                       </SelectItem>
-                    ))}
+                    ))
+                  ) : (
+                    <SelectItem disabled value="none">
+                      Tidak ada sub category
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
-
           </div>
 
-          {/* DOWNLOAD BUTTON */}
-          <Button className="mt-4" onClick={downloadReport}>
-            Download Report
+          <Button className="mt-4" onClick={downloadExcel}>
+            Download Excel
           </Button>
 
         </div>
