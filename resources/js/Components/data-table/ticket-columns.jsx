@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown } from "lucide-react"
 import ActionDropdown from "@/components/ActionDropdown"
+import StatusBadge from "@/components/status-badge"
 
 export const ticketColumns = [
 
@@ -128,20 +129,8 @@ export const ticketColumns = [
       />
     ),
     cell: ({ row }) => {
-      const v = row.getValue("status")
-      return (
-        <Badge
-          variant={
-            v === "Open"
-              ? "destructive"
-              : v === "Close"
-              ? "secondary"
-              : "outline"
-          }
-        >
-          {v}
-        </Badge>
-      )
+      const v = row.getValue("status");
+      return <StatusBadge status={v} />;
     },
   },
 

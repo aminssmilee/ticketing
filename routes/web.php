@@ -87,6 +87,7 @@ Route::prefix('ticket')
         // Work Instruction
         Route::get('/wi', [WorkInstructionController::class, 'index'])->name('wi');
         Route::post('/wi/upload', [WorkInstructionController::class, 'store'])->name('wi.upload');
+        // Route::delete('/wi/{id}', [WorkInstructionController::class, 'destroy'])->name('wi.destroy');
 
         // Update Ticket
         Route::get('/update/{ticket_number}', [TicketController::class, 'edit'])->name('update');
@@ -157,5 +158,9 @@ Route::prefix('ticket')
 
             Route::delete('/delete/{ticket_number}', [TicketController::class, 'destroy'])
                 ->name('delete');
+
+            Route::delete('/wi/{id}', [WorkInstructionController::class, 'destroy'])
+                ->middleware('admin')
+                ->name('wi.delete');
         });
     });

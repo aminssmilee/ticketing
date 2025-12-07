@@ -50,7 +50,7 @@ export function SiteHeader({
           actions
         ) : (
           <>
-            <Button variant="outline" size="icon">
+            {/* <Button variant="outline" size="icon">
               <RefreshCcwIcon className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="icon">
@@ -58,7 +58,7 @@ export function SiteHeader({
             </Button>
             <Button variant="ghost" size="icon">
               <BellIcon className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </>
         )}
       </div>

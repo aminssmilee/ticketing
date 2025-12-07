@@ -8,6 +8,8 @@ use App\Models\Ticket;
 use App\Http\Controllers\Controller;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Common\Entity\Style\Color;
+use Carbon\Carbon;
+
 
 
 
@@ -46,17 +48,21 @@ class TicketController extends Controller
     /**
      * Detail Ticket
      */
+
     public function show($ticket_number)
     {
         $ticket = Ticket::with(['gateway', 'user', 'updates', 'categoryRef', 'subCategoryRef'])
             ->where('ticket_number', $ticket_number)
             ->firstOrFail();
 
+        // =============================
+        // UPDATE HISTORY
+        // =============================
         $updates = $ticket->updates()
             ->orderBy('created_at', 'asc')
             ->get()
             ->map(fn($u) => [
-                "date"        => $u->created_at->format('Y-m-d H:i'),
+                "date"        => $u->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i'),
                 "updated_by"  => $u->updated_by,
                 "flag"        => $u->flag,
                 "indication"  => $u->indication,
@@ -64,11 +70,44 @@ class TicketController extends Controller
                 "description" => $u->description,
             ]);
 
+        // Ambil update terakhir untuk end_date & durasi
+        $closedUpdate = $ticket->updates()->latest()->first();
+
+        // =============================
+        // HITUNG DURATION
+        // =============================
+        $duration = "-";
+
+        if ($ticket->status === 'closed' && $closedUpdate) {
+
+            $start = Carbon::parse($ticket->start_date);
+            $end   = Carbon::parse($closedUpdate->created_at);
+
+            $diff  = $start->diff($end);
+
+            if ($diff->d >= 1) {
+                // Jika sudah lebih dari 1 hari
+                $duration = sprintf(
+                    "%d Hari %d Jam %d Menit",
+                    $diff->d,
+                    $diff->h,
+                    $diff->i
+                );
+            } else {
+                // Jika kurang dari 1 hari
+                $duration = sprintf(
+                    "%d Jam %d Menit",
+                    ($diff->h + ($diff->d * 24)),
+                    $diff->i
+                );
+            }
+        }
+
         return Inertia::render('Ticket/ViewTicket', [
             "ticket" => [
                 'ticket_number' => $ticket->ticket_number,
                 'gateway'       => $ticket->gateway->name ?? '-',
-                'ticket_date'   => $ticket->created_at->format('Y-m-d H:i'),
+                'ticket_date'   => $ticket->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i'),
                 'start_date'    => $ticket->start_date,
                 'category'      => $ticket->categoryRef->name ?? '-',
                 'subcategory'   => $ticket->subCategoryRef->name ?? '-',
@@ -79,13 +118,21 @@ class TicketController extends Controller
                 'updated_by'    => $ticket->user->name ?? '-',
                 'pic'           => $ticket->gateway->name ?? '-',
                 'status'        => ucfirst($ticket->status),
-                'duration'      => "-",
+
+                // DURATION FIXED
+                'duration'      => $duration,
+
                 'assigned_date' => $ticket->start_date,
-                'end_date'      => $ticket->end_date ?? "-",
+
+                // END DATE FIXED
+                'end_date'      => ($ticket->status === 'closed' && $closedUpdate)
+                    ? $closedUpdate->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i')
+                    : "-",
             ],
             "updates" => $updates
         ]);
     }
+
 
     /**
      * Store ticket
@@ -160,8 +207,11 @@ class TicketController extends Controller
         }
 
         $tickets = $query->paginate($perPage)->withQueryString();
-
         $tickets->getCollection()->transform(function ($t) {
+
+            // Ambil last update PER ticket
+            $lastUpdate = $t->updates()->latest()->first();
+
             return [
                 'ticket_number' => $t->ticket_number,
                 'gateway'       => $t->gateway->name ?? '-',
@@ -179,11 +229,15 @@ class TicketController extends Controller
 
                 'pic'           => ($t->gateway->code ?? '') . ' - ' . ($t->gateway->name ?? '-'),
                 'status'        => ucfirst($t->status),
-                'duration'      => "-",
 
-                'assigned_by' => $t->user->name ?? '-',
+                'duration'      => "-",
+                'assigned_by'   => $t->user->name ?? '-',
                 'assigned_date' => $t->start_date,
-                'end_date'      => $t->end_date ?? "-",
+
+                // END DATE dari last update
+                'end_date' => $lastUpdate
+                    ? $lastUpdate->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i')
+                    : "-",
             ];
         });
 

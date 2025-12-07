@@ -61,7 +61,11 @@ export default function ViewTicket() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <p><strong>Ticket Number:</strong> {ticket.ticket_number}</p>
-              <p><strong>Status:</strong> {ticket.status}</p>
+              <p className="flex items-center gap-2">
+                <strong>Status:</strong>
+                <StatusBadge status={ticket.status} />
+              </p>
+
 
               <p><strong>Gateway:</strong> {ticket.gateway}</p>
               <p><strong>Category:</strong> {ticket.category}</p>
@@ -78,7 +82,7 @@ export default function ViewTicket() {
               <p><strong>PIC:</strong> {ticket.pic ?? "-"}</p>
               <p><strong>Duration:</strong> {ticket.duration ?? "-"}</p>
 
-              <p><strong>End Date:</strong> {ticket.updated_at ?? "-"}</p>
+              <p><strong>End Date:</strong> {ticket.end_date ?? "-"}</p>
             </div>
           </div>
 
