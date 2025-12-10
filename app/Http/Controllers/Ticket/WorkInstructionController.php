@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\WorkInstruction;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
 
 class WorkInstructionController extends Controller
 {
@@ -29,6 +30,7 @@ class WorkInstructionController extends Controller
 
         return Inertia::render('Ticket/WorkInstruction', [
             'wi' => $wi,
+            'role' => auth()->user()->role,
             'categories' => $categories,
             'subcategories' => $subcategories,
         ]);
@@ -57,5 +59,20 @@ class WorkInstructionController extends Controller
         ]);
 
         return back()->with('success', 'File WI berhasil diupload!');
+    }
+    public function destroy($id)
+    {
+        // Ambil WI berdasarkan ID
+        $wi = WorkInstruction::findOrFail($id);
+
+        // Hapus file dari storage jika ada
+        if ($wi->file_path && Storage::disk('public')->exists($wi->file_path)) {
+            Storage::disk('public')->delete($wi->file_path);
+        }
+
+        // Hapus database record
+        $wi->delete();
+
+        return back()->with('success', 'Work Instruction berhasil dihapus!');
     }
 }

@@ -17,56 +17,41 @@ import {
   SelectItem
 } from "@/components/ui/select";
 
+// ============================================================
+// CATEGORY DATA
+// ============================================================
 const CATEGORY_DATA = {
   RF: [
     "BDC", "BDC Controller", "BUC", "BUC Controller", "LNA Controller",
     "LNA Switch", "LNA", "LNA Tracking", "Switch Box BUC", "Switch Box BDC",
     "BDC CSM", "Monopulse Plate", "TRU", "TWTA", "TWTA RCU"
   ],
-
   Utility: ["Panel", "PAC", "Genset", "AC NWIEE", "UPS", "ATS"],
-
   Ancillary: [
     "Dehidrator", "Rain Blower", "Lampu AWL", "Lampu Kingpost",
     "Lampu HUB", "TFCU/GPS", "10 MHz Distribution"
   ],
-
   Activity: ["Belum ada sub kategori"],
-
   "Antenna Issue": ["Belum ada sub kategori"],
-
   Antenna: ["ACU", "ADU", "Motorize", "Tracking", "KVM"],
-
   "Diesel Refill": ["Belum ada sub kategori"],
-
   "Electrical Report": ["Belum ada sub kategori"],
-
   Guest: ["10 MHz Distribution"],
-
   PM: [
-    "Warming Up Genset",
-    "Cleaning Genset, PKG, Tangki BBM & Sum Pit",
-    "Cleaning Filter UPS",
-    "PM UPS + Battery Testing & Test Discharge Battery",
+    "Warming Up Genset", "Cleaning Genset, PKG, Tangki BBM & Sum Pit",
+    "Cleaning Filter UPS", "PM UPS + Battery Testing & Test Discharge Battery",
     "Maintenance Cleaning AC Split & AC Antenna",
     "Cleaning Filter Indoor PAC & Cuci Outdoor PAC",
-    "Maintenance PAC",
-    "Cleaning Panel Listrik",
-    "Load & Temperature Measurement",
-    "Grounding Measurement",
-    "N-G Voltage Measurement",
-    "Maintenance Genset",
+    "Maintenance PAC", "Cleaning Panel Listrik",
+    "Load & Temperature Measurement", "Grounding Measurement",
+    "N-G Voltage Measurement", "Maintenance Genset",
     "Electrical Power Quality Measurement",
     "Capture/Setting Parameter RF & Utility",
-    "Check Ancillary System",
-    "Test Redundancy",
-    "PM Antenna Tracking System",
-    "PM Antenna Structure",
-    "Inspection & Cleaning Rain Blower",
-    "PM Antenna Structure TTC",
+    "Check Ancillary System", "Test Redundancy",
+    "PM Antenna Tracking System", "PM Antenna Structure",
+    "Inspection & Cleaning Rain Blower", "PM Antenna Structure TTC",
     "Neutral to Grounding Measurement"
   ],
-
   CM: [
     "Dehydrator", "Rain Blower", "Lampu AWL", "Lampu Kingpost",
     "Lampu HUB", "10 MHz Distribution", "ACU", "ADU", "Motorize",
@@ -76,21 +61,18 @@ const CATEGORY_DATA = {
     "TRU", "TWTA", "TWTA RCU", "Panel", "PAC", "Genset", "AC NWIEE",
     "UPS", "ATS"
   ],
-
   Weather: ["Belum ada sub kategori"],
-
   Monitoring: ["Belum ada sub kategori"],
-
   Panel: ["Belum ada sub kategori"],
-
   HUB: ["Belum ada sub kategori"],
-
   TTC: ["Activity", "PM", "CM", "RF", "Ancillary", "Utility"],
 };
 
-
 export default function WorkInstruction() {
   const { wi } = usePage().props;
+  const { role } = usePage().props;
+
+  // Form state
 
   const [form, setForm] = useState({
     category: "",
@@ -100,12 +82,20 @@ export default function WorkInstruction() {
     file: null,
   });
 
+  // Submit form WI
   const submitWI = () => {
     router.post(
       route("ticket.wi.upload"),
       { ...form },
       { forceFormData: true }
     );
+  };
+
+  // Delete WI
+  const deleteWI = (id) => {
+    if (!confirm("Hapus WI ini?")) return;
+
+    router.delete(route("ticket.wi.delete", id));
   };
 
   return (
@@ -115,7 +105,7 @@ export default function WorkInstruction() {
       <SidebarInset>
         <SiteHeader
           title="Work Instruction"
-          description="Kelola dokumen WI (Work Instruction) untuk kebutuhan teknis lapangan."
+          description="Kelola dokumen WI untuk kebutuhan teknis lapangan."
         />
 
         <div className="px-4 py-6 space-y-8 lg:px-6">
@@ -190,6 +180,7 @@ export default function WorkInstruction() {
               }
             />
 
+            {/* Submit */}
             <Button className="mt-2" onClick={submitWI}>
               Upload
             </Button>
@@ -206,8 +197,13 @@ export default function WorkInstruction() {
                   <th className="p-2 border">Category</th>
                   <th className="p-2 border">Sub</th>
                   <th className="p-2 border">Description</th>
-                  <th className="p-2 border">Taks</th>
+                  <th className="p-2 border">Tags</th>
                   <th className="p-2 border">Document</th>
+
+                  {/* SHOW ACTIONS ONLY FOR ADMIN */}
+                  {role === "admin" && (
+                    <th className="p-2 border">Actions</th>
+                  )}
                 </tr>
               </thead>
 
@@ -219,14 +215,25 @@ export default function WorkInstruction() {
                     <td className="p-2 border">{item.sub_category}</td>
                     <td className="p-2 border">{item.description}</td>
                     <td className="p-2 border">{item.tags}</td>
+
                     <td className="p-2 border text-center">
-                      <a
-                        href={`/storage/${item.file_path}`}
-                        target="_blank"
-                      >
+                      <a href={`/storage/${item.file_path}`} target="_blank">
                         <Button size="sm">View</Button>
                       </a>
                     </td>
+
+                    {/* DELETE BUTTON ONLY FOR ADMIN */}
+                    {role === "admin" && (
+                      <td className="p-2 border text-center">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteWI(item.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

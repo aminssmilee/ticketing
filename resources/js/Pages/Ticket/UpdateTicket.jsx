@@ -1,31 +1,37 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import React, { useState } from "react";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 
-import { usePage, router } from "@inertiajs/react"
+import { usePage, router } from "@inertiajs/react";
 
 export default function UpdateTicket() {
-    const { props } = usePage()
-    const { ticket } = props
+    const { ticket } = usePage().props;
 
-    // State input user
-    const [flag, setFlag] = useState(ticket.flag ?? "")
-    const [status, setStatus] = useState(ticket.status ?? "Open")
-    const [description, setDescription] = useState("")
-    const [action, setAction] = useState("")
-    const [indication, setIndication] = useState("")
-    const [endDate, setEndDate] = useState("")
+    // State
+    const [flag, setFlag] = useState(ticket.flag ?? "");
+    const [status, setStatus] = useState(ticket.status ?? "Open");
+    const [description, setDescription] = useState("");
+    const [action, setAction] = useState("");
+    const [indication, setIndication] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [assignTo, setAssignTo] = useState("");
 
-    // ============= SUBMIT UPDATE =============
+    // Submit update
     const handleSubmit = () => {
         router.post(route("ticket.update.submit", ticket.ticket_number), {
             flag,
@@ -34,19 +40,22 @@ export default function UpdateTicket() {
             description,
             status,
             end_date: status === "Close" ? endDate : null,
-        })
-    }
+            assign_to: status === "Assign" ? assignTo : null,
+        });
+    };
 
     return (
         <SidebarProvider>
             <AppSidebar variant="inset" />
 
             <SidebarInset>
-                <SiteHeader title="Update Ticket" description="Update tiket yang sudah dibuat." />
+                <SiteHeader
+                    title="Update Ticket"
+                    description="Update tiket yang sudah dibuat."
+                />
 
                 <div className="px-4 py-6 lg:px-6">
                     <div className="border rounded-xl p-6 bg-card shadow-sm">
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             {/* Ticket Number */}
@@ -84,7 +93,6 @@ export default function UpdateTicket() {
                                 <Label>Sub Category</Label>
                                 <Input value={ticket.subcategory ?? "-"} disabled />
                             </div>
-
 
                             {/* Serial Number */}
                             <div>
@@ -158,37 +166,59 @@ export default function UpdateTicket() {
                                 <Input value={ticket.pic} disabled />
                             </div>
 
-                            {/* Status */}
-                            <div>
-                                <Label>Status</Label>
-                                <Select value={status} onValueChange={setStatus}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Open">Open</SelectItem>
-                                        <SelectItem value="Update">Update</SelectItem>
-                                        <SelectItem value="Assign">Assign</SelectItem>
-                                        <SelectItem value="Close">Close</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            {/* ================= STATUS + SLOT KANAN ================= */}
+                            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
 
-                            {/* END DATE — jika status Close */}
-                            {status === "Close" && (
-                                <div>
-                                    <Label>End Date</Label>
-                                    <Input
-                                        type="datetime-local"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                    />
+                                {/* STATUS — kiri */}
+                                <div className="w-full">
+                                    <Label>Status</Label>
+                                    <Select value={status} onValueChange={setStatus}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {/* <SelectItem value="Open">Open</SelectItem> */}
+                                            <SelectItem value="Update">Update</SelectItem>
+                                            <SelectItem value="Assign">Assign</SelectItem>
+                                            <SelectItem value="Close">Close</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                            )}
 
+                                {/* FIELD KANAN — End Date / Assign To */}
+                                <div className="w-full">
+                                    {status === "Close" && (
+                                        <>
+                                            <Label>End Date</Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </>
+                                    )}
+
+                                    {status === "Assign" && (
+                                        <>
+                                            <Label>Assign To</Label>
+                                            <Select value={assignTo} onValueChange={setAssignTo}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pilih departemen tujuan" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="GSM">GSM</SelectItem>
+                                                    <SelectItem value="UOM">UOM</SelectItem>
+                                                    <SelectItem value="SNT">SNT</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </>
+                                    )}
+                                </div>
+
+                            </div>
                         </div>
 
-                        {/* SUBMIT BUTTON */}
+                        {/* Submit */}
                         <div className="mt-6 flex justify-end">
                             <Button className="px-6" onClick={handleSubmit}>
                                 Update Ticket
@@ -199,5 +229,5 @@ export default function UpdateTicket() {
                 </div>
             </SidebarInset>
         </SidebarProvider>
-    )
+    );
 }
