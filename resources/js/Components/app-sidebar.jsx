@@ -85,7 +85,7 @@ export function AppSidebar({ ...props }) {
     navSecondary: [
       {
         title: "Admin WA",
-        url: "https://wa.me/628xxxxxxx", // ganti dengan nomor WA admin
+        url: "https://wa.me/6285733207709", // ganti dengan nomor WA admin +6285733207709
         icon: wa,
       },
     ],
