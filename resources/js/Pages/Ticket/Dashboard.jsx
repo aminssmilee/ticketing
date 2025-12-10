@@ -39,7 +39,7 @@ export default function Dashboard() {
       <SidebarInset>
         <SiteHeader
           title="Dashboard"
-          description="Ringkasan aktivitas Gateway & SMT Ticket"
+          description="Ringkasan aktivitas Gateway & SNT Ticket"
         />
 
         <div className="p-6 space-y-10">
