@@ -62,7 +62,7 @@ export default function Dashboard() {
           <Card className="border border-gray-200 shadow-md">
             <div className="bg-blue-900 text-white px-4 py-3 rounded-t-md">
               <h2 className="text-lg font-semibold text-center tracking-wide">
-                SUMMARY GATEWAY SMT TICKET
+                SUMMARY GATEWAY SNT TICKET
               </h2>
             </div>
 
@@ -89,7 +89,7 @@ export default function Dashboard() {
           <Card className="border border-gray-300 shadow-md overflow-hidden">
             <div className="bg-blue-900 text-white px-4 py-3 rounded-t-md">
               <h2 className="text-lg font-semibold text-center tracking-wide">
-                SUMMARY GAR & SMT TICKET
+                SUMMARY GAR & SNT TICKET
               </h2>
             </div>
 
