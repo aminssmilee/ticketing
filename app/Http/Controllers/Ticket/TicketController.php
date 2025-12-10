@@ -382,19 +382,42 @@ class TicketController extends Controller
     public function exportExcel(Request $request)
     {
         $tickets = Ticket::query()
-            ->when($request->start_date, fn($q) => $q->whereDate('start_date', '>=', $request->start_date))
-            ->when($request->end_date, fn($q) => $q->whereDate('start_date', '<=', $request->end_date))
-            ->when($request->category, fn($q) => $q->where('category_id', $request->category))
-            ->when($request->sub_category, fn($q) => $q->where('sub_category_id', $request->sub_category))
-            ->with('gateway')
+            ->when(
+                $request->start_date,
+                fn($q) =>
+                $q->whereDate('start_date', '>=', $request->start_date)
+            )
+            ->when(
+                $request->end_date,
+                fn($q) =>
+                $q->whereDate('start_date', '<=', $request->end_date)
+            )
+            ->when(
+                $request->category,
+                fn($q) =>
+                $q->where('category_id', $request->category)
+            )
+            ->when(
+                $request->sub_category,
+                fn($q) =>
+                $q->where('sub_category_id', $request->sub_category)
+            )
+            ->with([
+                'gateway',
+                'categoryRef',
+                'subCategoryRef',
+                'updates.user'
+            ])
+            ->orderBy('created_at', 'desc')
             ->get();
+
 
         $fileName = "ticket_report_" . now()->format("Ymd_His") . ".xlsx";
 
         $writer = WriterEntityFactory::createXLSXWriter();
         $writer->openToBrowser($fileName);
 
-        // Header
+        // HEADER
         $header = WriterEntityFactory::createRowFromArray([
             "Ticket Number",
             "Gateway",
@@ -402,26 +425,66 @@ class TicketController extends Controller
             "Sub Category",
             "Start Date",
             "Status",
-            "Alarm",
+
+            // HISTORY PER LINE
+            "Update Date",
+            "Updated By",
+            "Flag",
             "Indication",
+            "Action",
+            "Description",
         ]);
 
         $writer->addRow($header);
 
-        // Rows
+        // ROWS
         foreach ($tickets as $t) {
-            $row = WriterEntityFactory::createRowFromArray([
-                $t->ticket_number,
-                $t->gateway->name ?? "-",
-                $t->category,
-                $t->sub_category,
-                $t->start_date,
-                $t->status,
-                $t->alarm,
-                $t->indication,
-            ]);
 
-            $writer->addRow($row);
+            // Jika tidak ada history, tetap 1 row
+            if ($t->updates->count() === 0) {
+                $writer->addRow(
+                    WriterEntityFactory::createRowFromArray([
+                        $t->ticket_number,
+                        $t->gateway->name ?? "-",
+                        $t->categoryRef->name ?? "-",
+                        $t->subCategoryRef->name ?? "-",
+                        $t->start_date,
+                        ucfirst($t->status),
+
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                    ])
+                );
+
+                continue;
+            }
+
+            // Jika ada history, tiap history jadi baris baru
+            foreach ($t->updates as $u) {
+
+                $writer->addRow(
+                    WriterEntityFactory::createRowFromArray([
+                        $t->ticket_number,
+                        $t->gateway->name ?? "-",
+                        $t->categoryRef->name ?? "-",
+                        $t->subCategoryRef->name ?? "-",
+                        $t->start_date,
+                        ucfirst($t->status),
+
+                        // HISTORY
+                        $u->created_at->format("Y-m-d H:i"),
+                        $u->updated_by,
+                        $u->flag,
+                        $u->indication,
+                        $u->action,
+                        $u->description,
+                    ])
+                );
+            }
         }
 
         $writer->close();
