@@ -60,29 +60,43 @@ export default function ViewTicket() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+
+              {/* ================= IDENTITAS TICKET ================= */}
               <p><strong>Ticket Number:</strong> {ticket.ticket_number}</p>
               <p className="flex items-center gap-2">
                 <strong>Status:</strong>
                 <StatusBadge status={ticket.status} />
               </p>
 
-
+              {/* ================= KLASIFIKASI ================= */}
               <p><strong>Gateway:</strong> {ticket.gateway}</p>
               <p><strong>Category:</strong> {ticket.category}</p>
 
-              <p><strong>Ticket Date:</strong> {ticket.ticket_date}</p>
               <p><strong>Sub Category:</strong> {ticket.subcategory}</p>
-
-              <p><strong>Start Date:</strong> {ticket.start_date}</p>
-              <p><strong>Serial Number:</strong> {ticket.serial_number}</p>
-
-              <p><strong>Alarm:</strong> {ticket.alarm}</p>
               <p><strong>Flag:</strong> {ticket.flag}</p>
 
-              <p><strong>PIC:</strong> {ticket.pic ?? "-"}</p>
-              <p><strong>Duration:</strong> {ticket.duration ?? "-"}</p>
+              {/* ================= WAKTU ================= */}
+              <p><strong>Ticket Date:</strong> {ticket.ticket_date}</p>
+              <p><strong>Start Date:</strong> {ticket.start_date}</p>
 
               <p><strong>End Date:</strong> {ticket.end_date ?? "-"}</p>
+              <p><strong>Duration:</strong> {ticket.duration ?? "-"}</p>
+
+              {/* ================= TEKNIS ================= */}
+              <p><strong>Serial Number:</strong> {ticket.serial_number}</p>
+              <p><strong>Alarm:</strong> {ticket.alarm}</p>
+
+              {/* ================= PENANGANAN ================= */}
+              <p><strong>PIC:</strong> {ticket.pic ?? "-"}</p>
+              <p><strong>Indication:</strong> {ticket.indication ?? "-"}</p>
+
+              <p><strong>Action:</strong> {ticket.action ?? "-"}</p>
+
+              {/* ================= DESKRIPSI ================= */}
+              <p className="col-span-1 sm:col-span-2">
+                <strong>Description:</strong> {ticket.description ?? "-"}
+              </p>
+
             </div>
           </div>
 

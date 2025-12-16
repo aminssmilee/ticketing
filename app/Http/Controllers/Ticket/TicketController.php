@@ -70,36 +70,44 @@ class TicketController extends Controller
                 "description" => $u->description,
             ]);
 
-        // Ambil update terakhir untuk end_date & durasi
-        $closedUpdate = $ticket->updates()->latest()->first();
-
         // =============================
-        // HITUNG DURATION
+        // HITUNG DURATION (TANPA end_date)
         // =============================
         $duration = "-";
 
-        if ($ticket->status === 'closed' && $closedUpdate) {
+        if ($ticket->status === 'closed') {
 
-            $start = Carbon::parse($ticket->start_date);
-            $end   = Carbon::parse($closedUpdate->created_at);
+            $lastUpdate = $ticket->updates()->latest()->first();
 
-            $diff  = $start->diff($end);
+            if ($lastUpdate) {
 
-            if ($diff->d >= 1) {
-                // Jika sudah lebih dari 1 hari
-                $duration = sprintf(
-                    "%d Hari %d Jam %d Menit",
-                    $diff->d,
-                    $diff->h,
-                    $diff->i
+                // start_date dianggap WIB
+                $start = Carbon::createFromFormat(
+                    'Y-m-d H:i:s',
+                    $ticket->start_date,
+                    'Asia/Jakarta'
                 );
-            } else {
-                // Jika kurang dari 1 hari
-                $duration = sprintf(
-                    "%d Jam %d Menit",
-                    ($diff->h + ($diff->d * 24)),
-                    $diff->i
-                );
+
+                // created_at dianggap UTC (default MariaDB)
+                $end = Carbon::createFromFormat(
+                    'Y-m-d H:i:s',
+                    $lastUpdate->created_at,
+                    'UTC'
+                )->setTimezone('Asia/Jakarta');
+
+                $totalMinutes = $start->diffInMinutes($end);
+
+                $days    = intdiv($totalMinutes, 1440); // 24*60
+                $hours   = intdiv($totalMinutes % 1440, 60);
+                $minutes = $totalMinutes % 60;
+
+                if ($days > 0) {
+                    $duration = "{$days} Hari {$hours} Jam {$minutes} Menit";
+                } elseif ($hours > 0) {
+                    $duration = "{$hours} Jam {$minutes} Menit";
+                } else {
+                    $duration = "{$minutes} Menit";
+                }
             }
         }
 
@@ -115,6 +123,8 @@ class TicketController extends Controller
                 'flag'          => strtoupper($ticket->flag),
                 'alarm'         => $ticket->alarm,
                 'indication'    => $ticket->indication,
+                'action'        => $ticket->action,
+                'description'   => $ticket->description,
                 'updated_by'    => $ticket->user->name ?? '-',
                 'pic'           => $ticket->gateway->name ?? '-',
                 'status'        => ucfirst($ticket->status),
@@ -125,8 +135,8 @@ class TicketController extends Controller
                 'assigned_date' => $ticket->start_date,
 
                 // END DATE FIXED
-                'end_date'      => ($ticket->status === 'closed' && $closedUpdate)
-                    ? $closedUpdate->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i')
+                'end_date' => isset($lastUpdate)
+                    ? $lastUpdate->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i')
                     : "-",
             ],
             "updates" => $updates
@@ -303,11 +313,17 @@ class TicketController extends Controller
         // 🔥 Proses perubahan status
         $newStatus = strtolower($request->status);
 
+        // if ($ticket->status === 'closed') {
+        //     abort(403, 'Ticket sudah ditutup');
+        // }
+
         // Jika ticket di-close
         if ($newStatus === 'close' || $newStatus === 'closed') {
             $ticket->update([
                 'status'   => 'closed',
-                'end_date' => $request->end_date ?? now(),
+                'end_date' => $request->end_date
+                    ? Carbon::parse($request->end_date)->timezone('Asia/Jakarta')
+                    : now('Asia/Jakarta'),
             ]);
         }
         // Jika hanya update biasa
