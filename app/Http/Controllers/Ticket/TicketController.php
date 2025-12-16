@@ -71,35 +71,41 @@ class TicketController extends Controller
             ]);
 
         // Ambil update terakhir untuk end_date & durasi
-        $closedUpdate = $ticket->updates()->latest()->first();
+        $lastUpdate = $ticket->updates()->latest()->first();
 
         // =============================
-        // HITUNG DURATION
+        // HITUNG DURATION (TANPA end_date)
         // =============================
         $duration = "-";
 
-        if ($ticket->status === 'closed' && $closedUpdate) {
+        if ($ticket->status === 'closed' && $lastUpdate) {
 
-            $start = Carbon::parse($ticket->start_date);
-            $end   = Carbon::parse($closedUpdate->created_at);
+            // start_date dianggap WIB
+            $start = Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $ticket->start_date,
+                'Asia/Jakarta'
+            );
 
-            $diff  = $start->diff($end);
+            // created_at dianggap UTC (default MariaDB)
+            $end = Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $lastUpdate->created_at,
+                'UTC'
+            )->setTimezone('Asia/Jakarta');
 
-            if ($diff->d >= 1) {
-                // Jika sudah lebih dari 1 hari
-                $duration = sprintf(
-                    "%d Hari %d Jam %d Menit",
-                    $diff->d,
-                    $diff->h,
-                    $diff->i
-                );
+            $totalMinutes = $start->diffInMinutes($end);
+
+            $days    = intdiv($totalMinutes, 1440); // 24*60
+            $hours   = intdiv($totalMinutes % 1440, 60);
+            $minutes = $totalMinutes % 60;
+
+            if ($days > 0) {
+                $duration = "{$days} Hari {$hours} Jam {$minutes} Menit";
+            } elseif ($hours > 0) {
+                $duration = "{$hours} Jam {$minutes} Menit";
             } else {
-                // Jika kurang dari 1 hari
-                $duration = sprintf(
-                    "%d Jam %d Menit",
-                    ($diff->h + ($diff->d * 24)),
-                    $diff->i
-                );
+                $duration = "{$minutes} Menit";
             }
         }
 
@@ -115,6 +121,8 @@ class TicketController extends Controller
                 'flag'          => strtoupper($ticket->flag),
                 'alarm'         => $ticket->alarm,
                 'indication'    => $ticket->indication,
+                'action'        => $ticket->action,
+                'description'   => $ticket->description,
                 'updated_by'    => $ticket->user->name ?? '-',
                 'pic'           => $ticket->gateway->name ?? '-',
                 'status'        => ucfirst($ticket->status),
@@ -125,8 +133,8 @@ class TicketController extends Controller
                 'assigned_date' => $ticket->start_date,
 
                 // END DATE FIXED
-                'end_date'      => ($ticket->status === 'closed' && $closedUpdate)
-                    ? $closedUpdate->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i')
+                'end_date'      => ($ticket->status === 'closed' && $lastUpdate)
+                    ? $lastUpdate->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i')
                     : "-",
             ],
             "updates" => $updates
@@ -303,11 +311,17 @@ class TicketController extends Controller
         // 🔥 Proses perubahan status
         $newStatus = strtolower($request->status);
 
+        // if ($ticket->status === 'closed') {
+        //     abort(403, 'Ticket sudah ditutup');
+        // }
+
         // Jika ticket di-close
         if ($newStatus === 'close' || $newStatus === 'closed') {
             $ticket->update([
                 'status'   => 'closed',
-                'end_date' => $request->end_date ?? now(),
+                'end_date' => $request->end_date
+                    ? Carbon::parse($request->end_date)->timezone('Asia/Jakarta')
+                    : now('Asia/Jakarta'),
             ]);
         }
         // Jika hanya update biasa
@@ -382,19 +396,42 @@ class TicketController extends Controller
     public function exportExcel(Request $request)
     {
         $tickets = Ticket::query()
-            ->when($request->start_date, fn($q) => $q->whereDate('start_date', '>=', $request->start_date))
-            ->when($request->end_date, fn($q) => $q->whereDate('start_date', '<=', $request->end_date))
-            ->when($request->category, fn($q) => $q->where('category_id', $request->category))
-            ->when($request->sub_category, fn($q) => $q->where('sub_category_id', $request->sub_category))
-            ->with('gateway')
+            ->when(
+                $request->start_date,
+                fn($q) =>
+                $q->whereDate('start_date', '>=', $request->start_date)
+            )
+            ->when(
+                $request->end_date,
+                fn($q) =>
+                $q->whereDate('start_date', '<=', $request->end_date)
+            )
+            ->when(
+                $request->category,
+                fn($q) =>
+                $q->where('category_id', $request->category)
+            )
+            ->when(
+                $request->sub_category,
+                fn($q) =>
+                $q->where('sub_category_id', $request->sub_category)
+            )
+            ->with([
+                'gateway',
+                'categoryRef',
+                'subCategoryRef',
+                'updates.user'
+            ])
+            ->orderBy('created_at', 'desc')
             ->get();
+
 
         $fileName = "ticket_report_" . now()->format("Ymd_His") . ".xlsx";
 
         $writer = WriterEntityFactory::createXLSXWriter();
         $writer->openToBrowser($fileName);
 
-        // Header
+        // HEADER
         $header = WriterEntityFactory::createRowFromArray([
             "Ticket Number",
             "Gateway",
@@ -402,26 +439,66 @@ class TicketController extends Controller
             "Sub Category",
             "Start Date",
             "Status",
-            "Alarm",
+
+            // HISTORY PER LINE
+            "Update Date",
+            "Updated By",
+            "Flag",
             "Indication",
+            "Action",
+            "Description",
         ]);
 
         $writer->addRow($header);
 
-        // Rows
+        // ROWS
         foreach ($tickets as $t) {
-            $row = WriterEntityFactory::createRowFromArray([
-                $t->ticket_number,
-                $t->gateway->name ?? "-",
-                $t->category,
-                $t->sub_category,
-                $t->start_date,
-                $t->status,
-                $t->alarm,
-                $t->indication,
-            ]);
 
-            $writer->addRow($row);
+            // Jika tidak ada history, tetap 1 row
+            if ($t->updates->count() === 0) {
+                $writer->addRow(
+                    WriterEntityFactory::createRowFromArray([
+                        $t->ticket_number,
+                        $t->gateway->name ?? "-",
+                        $t->categoryRef->name ?? "-",
+                        $t->subCategoryRef->name ?? "-",
+                        $t->start_date,
+                        ucfirst($t->status),
+
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                    ])
+                );
+
+                continue;
+            }
+
+            // Jika ada history, tiap history jadi baris baru
+            foreach ($t->updates as $u) {
+
+                $writer->addRow(
+                    WriterEntityFactory::createRowFromArray([
+                        $t->ticket_number,
+                        $t->gateway->name ?? "-",
+                        $t->categoryRef->name ?? "-",
+                        $t->subCategoryRef->name ?? "-",
+                        $t->start_date,
+                        ucfirst($t->status),
+
+                        // HISTORY
+                        $u->created_at->format("Y-m-d H:i"),
+                        $u->updated_by,
+                        $u->flag,
+                        $u->indication,
+                        $u->action,
+                        $u->description,
+                    ])
+                );
+            }
         }
 
         $writer->close();
