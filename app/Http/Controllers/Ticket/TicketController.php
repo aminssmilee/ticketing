@@ -545,7 +545,7 @@ class TicketController extends Controller
                     $t->user->name ?? "-",
                     $t->flag ?? "-",
                     $t->indication ?? "-",
-                    "-",
+                    $t->action ?? "-",
                     $t->description ?? "Ticket dibuat",
                 ])
             );
@@ -613,8 +613,8 @@ class TicketController extends Controller
                         $lastUpdate->updated_by ?? "-",
                         $lastUpdate->flag ?? "-",
                         $lastUpdate->indication ?? "-",
-                        "Close Ticket",
-                        "Ticket ditutup",
+                        $lastUpdate->action ?? "-",
+                        $lastUpdate->description ?? "-",
                     ])
                 );
             }
