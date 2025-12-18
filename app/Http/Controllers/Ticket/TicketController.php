@@ -397,6 +397,15 @@ class TicketController extends Controller
     }
     public function exportExcel(Request $request)
     {
+        // Ambil nama category & sub category (untuk header)
+        $categoryName = $request->category
+            ? \App\Models\Category::find($request->category)?->name
+            : null;
+
+        $subCategoryName = $request->sub_category
+            ? \App\Models\SubCategory::find($request->sub_category)?->name
+            : null;
+
         $tickets = Ticket::query()
             ->when(
                 $request->start_date,
@@ -422,82 +431,190 @@ class TicketController extends Controller
                 'gateway',
                 'categoryRef',
                 'subCategoryRef',
-                'updates.user'
+                'updates',
+                'user'
             ])
             ->orderBy('created_at', 'desc')
             ->get();
 
-
-        $fileName = "ticket_report_" . now()->format("Ymd_His") . ".xlsx";
+        $fileName = "ticket_report_" . now('Asia/Jakarta')->format("Ymd_His") . ".xlsx";
 
         $writer = WriterEntityFactory::createXLSXWriter();
         $writer->openToBrowser($fileName);
 
-        // HEADER
-        $header = WriterEntityFactory::createRowFromArray([
-            "Ticket Number",
-            "Gateway",
-            "Category",
-            "Sub Category",
-            "Start Date",
-            "Status",
+        /**
+         * ==========================
+         * HEADER REPORT
+         * ==========================
+         */
+        $periode = ($request->start_date || $request->end_date)
+            ? 'Periode Laporan : ' .
+            ($request->start_date ?? '-') .
+            ' s/d ' .
+            ($request->end_date ?? '-')
+            : 'Periode Laporan : Semua Data';
 
-            // HISTORY PER LINE
-            "Update Date",
-            "Updated By",
-            "Flag",
-            "Indication",
-            "Action",
-            "Description",
-        ]);
+        $filter  = '';
+        $filter .= $categoryName
+            ? 'Category (' . $categoryName . ')'
+            : 'Category (Semua)';
+        $filter .= ' | ';
+        $filter .= $subCategoryName
+            ? 'Sub Category (' . $subCategoryName . ')'
+            : 'Sub Category (Semua)';
+        $writer->addRow(
+            WriterEntityFactory::createRowFromArray([
+                "LAPORAN DATA TICKET"
+            ])
+        );
 
-        $writer->addRow($header);
+        $writer->addRow(
+            WriterEntityFactory::createRowFromArray([
+                $periode
+            ])
+        );
 
-        // ROWS
+        $writer->addRow(
+            WriterEntityFactory::createRowFromArray([
+                $filter
+            ])
+        );
+
+        $writer->addRow(
+            WriterEntityFactory::createRowFromArray([
+                "Dicetak pada : " . now('Asia/Jakarta')->format('d F Y H:i') . " WIB"
+            ])
+        );
+
+        // Spasi sebelum tabel
+        $writer->addRow(WriterEntityFactory::createRowFromArray([]));
+        $writer->addRow(WriterEntityFactory::createRowFromArray([]));
+
+        /**
+         * ==========================
+         * HEADER TABEL
+         * ==========================
+         */
+        $writer->addRow(
+            WriterEntityFactory::createRowFromArray([
+                "Type",
+                "Ticket Number",
+                "Gateway",
+                "Category",
+                "Sub Category",
+                "Start Date (WIB)",
+                "Status",
+
+                "Event Date (WIB)",
+                "User",
+                "Flag",
+                "Indication",
+                "Action",
+                "Description",
+            ])
+        );
+
+        /**
+         * ==========================
+         * DATA
+         * ==========================
+         */
         foreach ($tickets as $t) {
 
-            // Jika tidak ada history, tetap 1 row
-            if ($t->updates->count() === 0) {
-                $writer->addRow(
-                    WriterEntityFactory::createRowFromArray([
-                        $t->ticket_number,
-                        $t->gateway->name ?? "-",
-                        $t->categoryRef->name ?? "-",
-                        $t->subCategoryRef->name ?? "-",
-                        $t->start_date,
-                        ucfirst($t->status),
+            /**
+             * OPEN TICKET
+             */
+            $writer->addRow(
+                WriterEntityFactory::createRowFromArray([
+                    "OPEN",
+                    $t->ticket_number,
+                    $t->gateway->name ?? "-",
+                    $t->categoryRef->name ?? "-",
+                    $t->subCategoryRef->name ?? "-",
 
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                    ])
-                );
+                    Carbon::parse($t->start_date)
+                        ->timezone('Asia/Jakarta')
+                        ->format('Y-m-d H:i'),
 
-                continue;
-            }
+                    ucfirst($t->status),
 
-            // Jika ada history, tiap history jadi baris baru
+                    Carbon::parse($t->start_date)
+                        ->timezone('Asia/Jakarta')
+                        ->format('Y-m-d H:i'),
+
+                    $t->user->name ?? "-",
+                    $t->flag ?? "-",
+                    $t->indication ?? "-",
+                    "-",
+                    $t->description ?? "Ticket dibuat",
+                ])
+            );
+
+            /**
+             * UPDATE TICKET
+             */
             foreach ($t->updates as $u) {
-
                 $writer->addRow(
                     WriterEntityFactory::createRowFromArray([
+                        "UPDATE",
                         $t->ticket_number,
                         $t->gateway->name ?? "-",
                         $t->categoryRef->name ?? "-",
                         $t->subCategoryRef->name ?? "-",
-                        $t->start_date,
+
+                        Carbon::parse($t->start_date)
+                            ->timezone('Asia/Jakarta')
+                            ->format('Y-m-d H:i'),
+
                         ucfirst($t->status),
 
-                        // HISTORY
-                        $u->created_at->format("Y-m-d H:i"),
+                        $u->created_at
+                            ->timezone('Asia/Jakarta')
+                            ->format('Y-m-d H:i'),
+
                         $u->updated_by,
                         $u->flag,
                         $u->indication,
                         $u->action,
                         $u->description,
+                    ])
+                );
+            }
+
+            /**
+             * CLOSE TICKET
+             */
+            if ($t->status === 'closed') {
+
+                $closeDate = $t->end_date
+                    ? Carbon::parse($t->end_date)->timezone('Asia/Jakarta')
+                    : optional($t->updates->last())->created_at?->timezone('Asia/Jakarta');
+
+                $lastUpdate = $t->updates->last();
+
+                $writer->addRow(
+                    WriterEntityFactory::createRowFromArray([
+                        "CLOSE",
+                        $t->ticket_number,
+                        $t->gateway->name ?? "-",
+                        $t->categoryRef->name ?? "-",
+                        $t->subCategoryRef->name ?? "-",
+
+                        Carbon::parse($t->start_date)
+                            ->timezone('Asia/Jakarta')
+                            ->format('Y-m-d H:i'),
+
+                        "Closed",
+
+                        $closeDate
+                            ? $closeDate->format('Y-m-d H:i')
+                            : "-",
+
+                        $lastUpdate->updated_by ?? "-",
+                        $lastUpdate->flag ?? "-",
+                        $lastUpdate->indication ?? "-",
+                        "Close Ticket",
+                        "Ticket ditutup",
                     ])
                 );
             }
