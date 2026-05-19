@@ -101,7 +101,14 @@ class LoginController extends Controller
     {
         $secret = env("RECAPTCHA_SECRET_KEY");
 
-        $response = Http::asForm()->post(
+        $http = Http::asForm();
+
+        // Bypass SSL verification di local development (XAMPP tidak punya CA bundle)
+        if (app()->environment('local')) {
+            $http = $http->withoutVerifying();
+        }
+
+        $response = $http->post(
             "https://www.google.com/recaptcha/api/siteverify",
             [
                 'secret'   => $secret,

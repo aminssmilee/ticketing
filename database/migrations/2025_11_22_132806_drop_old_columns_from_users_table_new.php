@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'department',
-                'sub_department',
-                'location',
-                'position'
-            ]);
-        });
+        $columns = ['department', 'sub_department', 'location', 'position'];
+        $existing = array_filter($columns, fn($col) => Schema::hasColumn('users', $col));
+
+        if (!empty($existing)) {
+            Schema::table('users', function (Blueprint $table) use ($existing) {
+                $table->dropColumn(array_values($existing));
+            });
+        }
     }
 
     public function down(): void

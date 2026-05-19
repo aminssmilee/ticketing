@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::table('tickets', function (Blueprint $table) {
-            $table->dropColumn([
-                'category',
-                'sub_category',
-                'old_category',
-                'old_subcategory'
-            ]);
-        });
+        $columns = ['category', 'sub_category', 'old_category', 'old_subcategory'];
+        $existing = array_filter($columns, fn($col) => Schema::hasColumn('tickets', $col));
+
+        if (!empty($existing)) {
+            Schema::table('tickets', function (Blueprint $table) use ($existing) {
+                $table->dropColumn(array_values($existing));
+            });
+        }
     }
 
     public function down()
