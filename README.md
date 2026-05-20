@@ -169,5 +169,5 @@ By default, users registered via the sign-up form are assigned the standard `'us
 📄 License
 This project is created for portfolio and academic purposes.
 
-**Developer**: Kelompok 1  
+**Developer**: aminssmile
 *Showcasing modern Laravel development, Inertia.js React SPA integration, custom dark mode styling, and structured ticketing workflows.*
